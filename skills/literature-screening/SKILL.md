@@ -3,16 +3,20 @@ name: literature-screening
 description: >
   Locks inclusion and exclusion criteria, then screens titles and abstracts
   and full texts with reasons, optional Cohen's kappa, and a PRISMA 2020
-  flow that reconciles to the deduplicated library. Trigger on "screen the
-  papers", "inclusion criteria", "PRISMA flow", or "kappa". Do not use it
-  to deduplicate, to fetch PDFs from shadow libraries, or to write the review.
+  flow that reconciles to the deduplicated library. Narrative reviews
+  instead rank the library and keep a user-confirmed core, logging the
+  rest as not read. Trigger on "screen the papers", "inclusion criteria",
+  "PRISMA flow", "kappa", or "narrative core". Do not use it to
+  deduplicate, to fetch PDFs from shadow libraries, or to write the review.
 ---
 
 # Literature screening
 
 ## When to use
 
-`02-records/library.csv` and `02-records/prisma_counts.json` exist. Criteria are drafted and locked here before any final exclude decision.
+`02-records/library.csv` and `02-records/prisma_counts.json` exist. Criteria are drafted and locked here before any final exclude decision. Read `review_type` before choosing a path.
+
+Narrative reviews do not claim a complete systematic flow. They lock criteria, then follow `references/narrative_core.md`: a rank suggestion for every record, a core the user sizes, and a not-read log for the rest. There is no fixed cap. Systematic, scoping, and umbrella reviews use the numbered steps below and do not write a narrative core.
 
 ## Inputs (paths) / Preconditions
 
@@ -39,6 +43,9 @@ python3 <suite>/skills/literature-screening/scripts/kappa.py \
 `<suite>` is the directory that contains `skills/`. Bands in the JSON `interpretation` field follow Landis and Koch (Biometrics, 1977): `poor`, `slight`, `fair`, `moderate`, `substantial`, `almost_perfect`. If kappa is below 0.60, or the JSON says `undefined` because expected agreement is 1, revise the criteria wording and repeat the pilot. Pilot decisions are provisional. They are not copied into `screening.csv`.
 
 3. Ask: "Pass inclusion lock on 03-screening/criteria.md? Reply yes or no." On yes, set `gates.inclusion_lock` to `true` and append `YYYY-MM-DD | literature-screening | inclusion lock passed | human`. Do not write final screening rows before this yes.
+
+If `review_type` is `narrative`, stop this numbered procedure here and follow `references/narrative_core.md`. Do not run steps 4–8. Systematic, scoping, and umbrella reviews continue at step 4. They do not write `narrative_rank.tsv`, `core_decision.tsv`, or `not_read.tsv`, and they do not call `scripts/narrative_core.py`.
+
 4. Title and abstract: one row per record per screener in `03-screening/screening.csv`. Columns: `record_id,stage,screener,decision,reason_code,reason_note,date,consensus`. `stage` is `title_abstract`. `decision` is `include`, `exclude`, or `maybe`. `exclude` requires a `reason_code`. Single screener: `consensus` equals `decision`. Two screeners: `consensus` stays empty until they resolve disagreements; then it is `include` or `exclude`.
 5. Full text: for every record with title/abstract `consensus` of `include` or `maybe`, add `stage` `full_text`. Retrieval failure is not an eligibility exclusion. Those records are "reports not retrieved" in the flow, with `reason_code` `FT_NOT_RETRIEVED`, and they do not go in the excluded-by-reason list.
 6. Build `03-screening/included.tsv` for records whose full-text `consensus` is `include`. Header: `record_id,doi,pmid,title,year,first_author,n_authors,venue,citation_key`. Copy identifiers from `library.csv`. Put the `journal` value in `venue`. `citation_key` is the first author's family name (ASCII letters) plus the four-digit year (`Lovelace2020`). Collisions get a trailing `a`, `b`, or `c`. `n_authors` is the count of authors joined by `; ` (semicolon then space), or empty if the author field is empty. RIS and NBIB rows already use that separator. If a CSV cell uses another separator, rewrite that cell to `; ` before counting. Do not invent a missing author.
@@ -57,15 +64,16 @@ sum of full-text reason counts = full_text_excluded
 
 ## Human gate(s)
 
-`inclusion_lock` before any final row in `screening.csv`. A kappa number does not lock the criteria. The user does.
+`inclusion_lock` before any final row in `screening.csv` or `core_decision.tsv`. A kappa number does not lock the criteria. The user does. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. The card is not the lock. Only a direct yes is.
 
 ## Outputs (exact paths + formats)
 
 - `03-screening/criteria.md`
 - `03-screening/pilot.csv` and `kappa.json` when a dual pilot was run
-- `03-screening/screening.csv` — columns in step 4
+- `03-screening/screening.csv` — columns in step 4, or the narrative columns in `references/narrative_core.md`
 - `03-screening/included.tsv` — columns in step 6
-- `03-screening/prisma_flow.md` — PRISMA 2020 boxes, both database and other-source arms
+- `03-screening/prisma_flow.md` — PRISMA 2020 boxes for a full eligibility screen, or the narrative core note
+- Narrative only: `03-screening/narrative_rank.tsv`, `core_decision.tsv`, and `not_read.tsv`
 
 ## Quality checklist
 
@@ -74,6 +82,7 @@ sum of full-text reason counts = full_text_excluded
 - Flow arithmetic matches `prisma_counts.json` and the CSV.
 - Included DOIs and PMIDs match `library.csv` for that `record_id`.
 - Single-screener reviews have a `single_screener` log line and no fabricated kappa file.
+- A narrative project prints `OK narrative core`, says it is not a complete systematic review, and logs every non-core record as not read.
 
 ## Guardrails
 
@@ -81,6 +90,7 @@ sum of full-text reason counts = full_text_excluded
 - Do not drop duplicates again here. Duplicates were removed in `02-records/`.
 - Do not download a PDF from an unauthorized site to decide full text. If you cannot retrieve it legally, count it as not retrieved.
 - Maybe at title/abstract goes to full text. It is not a silent exclude.
+- Do not apply a numeric cap to a narrative core, and do not describe that core as a systematic review.
 
 ## Next step
 

@@ -20,6 +20,7 @@ NAME_RE = re.compile(
 HEADER_IDS_RE = re.compile(r"^-\s+Evidence IDs:\s*(.+)$", re.M)
 WORD_RE = re.compile(r"[A-Za-z0-9]+(?:'[A-Za-z]+)?")
 DROPPED_RE = re.compile(r"\bdropped (E\d{3,})\b")
+SECTION_RE = re.compile(r"^## S(\d+)\.\s+(.+?)\s*$", re.M)
 ID_COLUMNS = ("evidence_id", "id")
 
 
@@ -133,6 +134,38 @@ def outline_evidence_ids(outline_text: str) -> Set[str]:
     return found
 
 
+def check_finished_draft(outline_text: str, drafts: dict) -> List[str]:
+    """Refuse a finished draft while limitations or next questions are absent."""
+    matches = list(SECTION_RE.finditer(outline_text))
+    sections = [(int(match.group(1)), match.group(2).strip()) for match in matches]
+    errors: List[str] = []
+
+    def first(needle: str) -> Optional[int]:
+        found = [number for number, title in sections if needle in title.casefold()]
+        return found[0] if found else None
+
+    limitations = first("limitation")
+    next_questions = first("next question")
+    conclusion = first("conclusion")
+    if limitations is None:
+        errors.append("outline has no Limitations section")
+    if next_questions is None:
+        errors.append("outline has no Next questions section")
+    if limitations is not None and next_questions is not None and limitations == next_questions:
+        errors.append("limitations and next questions must be different sections")
+    if conclusion is not None and next_questions is not None and conclusion == next_questions:
+        errors.append("next questions must not be folded into the conclusion")
+    for number, label in ((limitations, "Limitations"), (next_questions, "Next questions")):
+        if number is None:
+            continue
+        text = drafts.get(number)
+        if not text:
+            errors.append(f"{label} section S{number} has no draft file")
+        elif not re.search(r"(?m)^-\s+Status:\s*checked\s*$", text):
+            errors.append(f"{label} section S{number} is not Status: checked")
+    return errors
+
+
 def check_manuscript(
     manuscript: str,
     outline_text: str,
@@ -171,6 +204,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--manuscript", type=Path)
     parser.add_argument("--outline", type=Path)
     parser.add_argument("--change-log", type=Path)
+    parser.add_argument("--finish", action="store_true")
+    parser.add_argument("--drafts", type=Path)
     args = parser.parse_args(argv)
     evidence_ids = None
     if args.evidence:
@@ -179,6 +214,27 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         except (OSError, ValueError) as exc:
             print(f"ERROR {exc}", file=sys.stderr)
             return 1
+    if args.finish:
+        if not args.outline or not args.drafts:
+            print("ERROR finish mode needs --outline and --drafts", file=sys.stderr)
+            return 1
+        drafts = {}
+        for path in sorted(args.drafts.glob("S*.md")):
+            match = re.match(r"S(\d+)", path.name)
+            if match is None:
+                continue
+            number = int(match.group(1))
+            if number in drafts:
+                print(f"ERROR two draft files for section {number}", file=sys.stderr)
+                return 1
+            drafts[number] = path.read_text(encoding="utf-8")
+        errors = check_finished_draft(args.outline.read_text(encoding="utf-8"), drafts)
+        if errors:
+            for error in errors:
+                print(f"ERROR {error}", file=sys.stderr)
+            return 1
+        print("OK draft set")
+        return 0
     if args.manuscript:
         if not args.outline or not args.change_log or evidence_ids is None:
             print(

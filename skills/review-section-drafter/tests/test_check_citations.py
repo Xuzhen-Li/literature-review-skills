@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from check_citations import check_manuscript, check_section, main  # noqa: E402
+from check_citations import check_finished_draft, check_manuscript, check_section, main  # noqa: E402
 
 IDS = {"E014", "E015"}
 
@@ -79,3 +79,31 @@ def test_manuscript_coverage_and_cli(tmp_path):
     ), encoding="utf-8")
     evidence.write_text("evidence_id,note\nE014,a\nE015,b\n", encoding="utf-8")
     assert main([str(section), "--budget", "100", "--evidence", str(evidence)]) == 0
+
+
+def test_finished_draft_requires_checked_limitations_and_next_questions(tmp_path):
+    outline = """## S4. Limitations
+
+## S5. Next questions
+
+## S6. Conclusions
+"""
+    drafts = tmp_path / "drafts"
+    drafts.mkdir()
+    (drafts / "S04-limitations.md").write_text("- Status: draft\n", encoding="utf-8")
+    (drafts / "S05-next-questions.md").write_text("- Status: checked\n", encoding="utf-8")
+    (tmp_path / "outline.md").write_text(outline, encoding="utf-8")
+    missing = check_finished_draft(outline, {5: "- Status: checked\n"})
+    assert any("Limitations" in error for error in missing)
+    unchecked = check_finished_draft(
+        outline,
+        {4: "- Status: draft\n", 5: "- Status: checked\n"},
+    )
+    assert any("not Status: checked" in error for error in unchecked)
+    assert check_finished_draft(
+        outline,
+        {4: "- Status: checked\n", 5: "- Status: checked\n"},
+    ) == []
+    assert main(["--finish", "--outline", str(tmp_path / "outline.md"), "--drafts", str(drafts)]) == 1
+    (drafts / "S04-limitations.md").write_text("- Status: checked\n", encoding="utf-8")
+    assert main(["--finish", "--outline", str(tmp_path / "outline.md"), "--drafts", str(drafts)]) == 0

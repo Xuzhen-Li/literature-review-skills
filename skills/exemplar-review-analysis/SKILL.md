@@ -13,7 +13,7 @@ description: >
 
 ## When to use
 
-Every included record has a reading note or a logged skip, and `06-exemplars/style_brief.md` does not exist yet. The user wants the outline skill to inherit a structure, not a paraphrase of someone else's review.
+Every included record has a reading note or a logged skip, and either `06-exemplars/style_brief.md` does not exist yet or `journal_lock` is true and that brief still says `Refreshed after journal lock: no`. The user wants the outline skill, and later the polishing skill, to inherit a structure, not a paraphrase of someone else's review.
 
 ## Inputs (paths) / Preconditions
 
@@ -37,7 +37,8 @@ If the user cannot supply three PDFs, stop and ask. Do not select stand-in paper
 3. Describe the pattern across the set in your own words: where the gap sentence sits, whether a methods section exists, how long the conclusion is relative to the body, and the grammatical person (`this review` versus `we`). Do not quote more than a short clause, and do not quote it if you can describe the pattern without it.
 4. Note what not to copy: their sentences, their figures, their reference list, and any table that is a published data compilation.
 5. Write `06-exemplars/style_brief.md` from the template. The "Implications" section is a constraint list for `review-outline-builder` (section order, a starting word budget, a figure budget). It is not an outline of this review's claims.
-6. Append `YYYY-MM-DD | exemplar-review-analysis | style brief from <N> reviews | agent`.
+6. Append `YYYY-MM-DD | exemplar-review-analysis | style brief from <N> reviews | agent`. Leave `Refreshed after journal lock: no` unless the journal is already locked. In that case, write the brief as the post-lock refresh in `references/journal_refresh.md` instead of a second file.
+7. After `journal_lock`, and again only if the user asks to refresh from the included set, follow `references/journal_refresh.md`. Do not pick exemplars by an impact factor or any metric you did not open that day. User-supplied lawful PDFs stay the only source.
 
 ## Human gate(s)
 
@@ -53,7 +54,8 @@ No project lock. If fewer than three exemplars were actually opened, do not writ
 - Word counts, figure counts, and citation counts are calculated or `[VERIFY]`, never a round number offered as a memory.
 - Citation density is blank when either input count is `[VERIFY]`.
 - The brief contains no paragraph copied from an exemplar.
-- Implications name a word budget and a figure budget the outline skill can start from, and they say those numbers are a starting point.
+- Implications name a word budget, a heading pattern, an abstract shape, and a figure budget. Before journal lock they are a starting point. After the refresh they are the pattern polishing must follow.
+- The post-lock brief names the locked journal and says `Refreshed after journal lock: yes`.
 
 ## Guardrails
 
@@ -61,7 +63,8 @@ No project lock. If fewer than three exemplars were actually opened, do not writ
 - Do not treat an exemplar's citations as papers you have read. They are not added to the evidence table here.
 - Do not adopt an exemplar's claim. Claims come from `evidence/evidence_table.csv`.
 - Do not set `journal_lock` because several exemplars share a journal.
+- Do not rank exemplar or included papers by an impact factor, a citation count, or a partition you did not open that day.
 
 ## Next step
 
-`review-outline-builder`.
+`review-outline-builder` when the journal is not locked yet. `manuscript-polishing` after the post-lock refresh.

@@ -32,6 +32,8 @@ STRUCTURAL_PREFIXES = (
     "author contributions",
 )
 METHODS_TYPES = {"systematic", "scoping", "umbrella"}
+PRISMA_2020 = "https://www.prisma-statement.org/prisma-2020"
+VERIFIED_LINE = r"verified on \d{4}-\d{2}-\d{2} at https://\S+"
 
 
 def load_evidence_ids(path: Path) -> Set[str]:
@@ -73,10 +75,69 @@ def _section_blocks(text: str) -> List[dict]:
     return blocks
 
 
+def _first_section(sections: Sequence[dict], needle: str) -> Optional[dict]:
+    return next((section for section in sections if needle in section["title"].casefold()), None)
+
+
+def _pooled_titles(sections: Sequence[dict]) -> List[str]:
+    hits = []
+    for section in sections:
+        title = section["title"].casefold()
+        if "pooled" in title or "meta-analysis" in title or "meta analysis" in title:
+            hits.append(section["title"])
+    return hits
+
+
+def check_systematic_checklist(text: str, sections: Sequence[dict], outline_text: str) -> List[str]:
+    """Registration reminder and bias-tool checklist. Pooling stays off unless asked."""
+    errors: List[str] = []
+    if "## Protocol registration" not in text:
+        errors.append("checklist needs ## Protocol registration")
+    elif "registration" not in text.casefold() or PRISMA_2020 not in text:
+        errors.append("protocol section must remind the user to report registration and cite PRISMA 2020")
+    registry = re.search(r"(?m)^Registry ID:\s*(.+?)\s*$", text)
+    registry_source = re.search(rf"(?m)^Registry source:\s*({VERIFIED_LINE})\s*$", text)
+    if registry is None:
+        errors.append("checklist needs 'Registry ID:'")
+    elif registry.group(1) not in {"none yet", "[VERIFY]"} and registry_source is None:
+        errors.append("a registry ID needs a Registry source line from the page you opened")
+    if "## Bias tool" not in text:
+        errors.append("checklist needs ## Bias tool")
+    tool = re.search(r"(?m)^Tool:\s*(.+?)\s*$", text)
+    official = re.search(r"(?m)^Official page:\s*(.+?)\s*$", text)
+    if tool is None or official is None:
+        errors.append("bias section needs 'Tool:' and 'Official page:'")
+    elif tool.group(1) == "not chosen":
+        if official.group(1) != "not opened":
+            errors.append("an unchosen bias tool keeps 'Official page: not opened'")
+    elif not re.fullmatch(VERIFIED_LINE, official.group(1)):
+        errors.append("name a bias tool only with an Official page verified on the day you opened it")
+    pooling = re.search(r"(?m)^Pooling:\s*(out of scope|in scope)\s*$", text)
+    asked = re.search(r"(?m)^User asked:\s*(yes|no)\s*$", text)
+    if pooling is None or asked is None:
+        errors.append("checklist needs 'Pooling: out of scope' or 'in scope', and 'User asked: yes' or 'no'")
+        return errors
+    titles = _pooled_titles(sections)
+    in_scope_line = bool(re.search(r"(?m)^- Pooled estimates: in scope\s*$", outline_text))
+    if pooling.group(1) == "out of scope":
+        if titles or in_scope_line:
+            errors.append("pooled estimates stay out unless the checklist and the outline both say they are in scope")
+        if re.search(r"pooled (estimate|effect|odds|mean)\s*[:=]\s*\d", text, re.I):
+            errors.append("do not write a pooled number while pooling is out of scope")
+    else:
+        if asked.group(1) != "yes":
+            errors.append("pooled estimates stay out unless the user asked")
+        if not titles or not in_scope_line:
+            errors.append("pooling is in scope but the outline does not say so in a section title and a scope line")
+    return errors
+
+
 def check_outline(
     text: str,
     evidence_ids: Optional[Set[str]] = None,
     require_locked: bool = False,
+    checklist_text: Optional[str] = None,
+    require_checklist: bool = False,
 ) -> List[str]:
     """Return a list of outline errors. An empty list means the outline passed."""
     errors: List[str] = []
@@ -132,8 +193,37 @@ def check_outline(
         errors.append("missing a section whose title contains 'Introduction'")
     if not any("conclusion" in title for title in folded):
         errors.append("missing a section whose title contains 'Conclusion'")
+    limitations = _first_section(sections, "limitation")
+    next_questions = _first_section(sections, "next question")
+    conclusion = _first_section(sections, "conclusion")
+    if limitations is None:
+        errors.append("missing a section whose title contains 'Limitation'")
+    if next_questions is None:
+        errors.append("missing a section whose title contains 'Next question'")
+    if limitations and next_questions and limitations["number"] == next_questions["number"]:
+        errors.append("limitations and next questions must be different sections")
+    if conclusion and limitations and conclusion["number"] == limitations["number"]:
+        errors.append("limitations must not be folded into the conclusion")
+    if conclusion and next_questions and conclusion["number"] == next_questions["number"]:
+        errors.append("next questions must not be folded into the conclusion")
+    pooled = _pooled_titles(sections)
+    pooling_line = bool(re.search(r"(?m)^- Pooled estimates: in scope\s*$", text))
+    if pooled and not pooling_line:
+        errors.append(
+            "pooled estimates stay out of the outline unless it says '- Pooled estimates: in scope'"
+        )
+    if pooling_line and not pooled:
+        errors.append("pooling is marked in scope but no section title says so")
     if review_type in METHODS_TYPES and not any("method" in title for title in folded):
         errors.append("this review type needs a section title containing 'Method'")
+    if review_type == "systematic":
+        if checklist_text is None:
+            if require_checklist:
+                errors.append("systematic reviews need 07-outline/systematic_methods_checklist.md")
+        else:
+            errors.extend(check_systematic_checklist(checklist_text, sections, text))
+    elif checklist_text is not None:
+        errors.append("the methods checklist is only for a systematic review")
 
     total = 0
     budgets_complete = True
@@ -189,6 +279,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         action="store_true",
         help="require '- Status: locked'",
     )
+    parser.add_argument("--checklist", type=Path)
     args = parser.parse_args(argv)
     try:
         evidence_ids = load_evidence_ids(args.evidence)
@@ -196,7 +287,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"ERROR {exc}", file=sys.stderr)
         return 1
     text = args.outline.read_text(encoding="utf-8")
-    errors = check_outline(text, evidence_ids, require_locked=args.locked)
+    review_type_match = TYPE_RE.search(text)
+    review_type = review_type_match.group(1) if review_type_match else ""
+    checklist_text = None
+    if args.checklist:
+        checklist_text = args.checklist.read_text(encoding="utf-8")
+    errors = check_outline(
+        text,
+        evidence_ids,
+        require_locked=args.locked,
+        checklist_text=checklist_text,
+        require_checklist=review_type == "systematic",
+    )
     if errors:
         for error in errors:
             print(f"ERROR {error}", file=sys.stderr)

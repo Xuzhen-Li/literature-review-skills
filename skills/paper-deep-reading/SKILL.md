@@ -17,6 +17,7 @@ An included record has a legal PDF or other full text the user can open (`04-lib
 ## Inputs (paths) / Preconditions
 
 - `<project>/03-screening/included.tsv` and `<project>/04-library/pdf_status.csv`.
+- `<project>/04-library/collection_checklist.tsv` with every `user_confirmed` cell `yes`. Do not start while `check_collections.py --ready` would fail.
 - `<project>/02-records/library.csv` for DOI, PMID, authors, and `journal`. Copy `journal` into the evidence column `venue` and into the note's `venue` line. `03-screening/included.tsv` already stores that same value as `venue`.
 - The user's open copy of the paper.
 - Column rules in `references/evidence_columns.md` (same header as `shared/evidence_table_schema.md`).
@@ -62,4 +63,4 @@ No project lock. Stop when the PDF and the library record disagree on DOI, PMID,
 
 ## Next step
 
-The next unread included paper. When every included record is either noted or logged as skipped for lack of a legal copy, go to `exemplar-review-analysis`.
+The next unread included paper. When every included record is either noted or logged as skipped for lack of a legal copy, go to `exemplar-review-analysis`. Attaching a note inside the user's reference manager is optional, and only after they ask: that export is `zotero-library-sync`, with a log of what was attached.

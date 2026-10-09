@@ -4,15 +4,17 @@ description: >
   Turns a working title into three candidate angles, a gap statement, and a
   feasibility count the user pastes from a database, then recommends one
   angle and stops for the topic lock. Trigger on "scope the review",
-  "find the gap", "which angle", or "lock the topic". Do not use it to
-  write the full search strategy, screen papers, or draft sections.
+  "find the gap", "which angle", "lock the topic", or "cluster the
+  export". Do not use it to write the full search strategy, screen
+  papers, or draft sections. The cluster pass does not replace the
+  topic lock.
 ---
 
 # Review scoping and gaps
 
 ## When to use
 
-`project.yaml` exists and `topic_lock` is not true. The product is `00-scope/scope_report.md`, not a search string and not a manuscript outline.
+`project.yaml` exists and `topic_lock` is not true. The product is `00-scope/scope_report.md`, not a search string and not a manuscript outline. After `02-records/library.csv` exists, also use this skill when the user asks for the cluster pass in step 9. That pass does not clear `topic_lock`.
 
 ## Inputs (paths) / Preconditions
 
@@ -47,13 +49,25 @@ YYYY-MM-DD | review-scoping-and-gaps | topic lock passed: angle <letter> | human
 
 On no: revise the rejected part and ask again. Do not lock.
 
+9. Optional, and only after `02-records/library.csv` exists and the user asks: cluster titles and abstracts. This does not replace steps 1–8 and it does not clear `topic_lock` by itself.
+
+```
+python3 <suite>/skills/review-scoping-and-gaps/scripts/cluster_export.py \
+  --library <project>/02-records/library.csv \
+  --question "<locked question>" \
+  --out <project>/00-scope/export_clusters.md
+```
+
+The groups are token overlap, not a new topic. If the file asks whether to reopen the topic lock, ask the user. Clear `topic_lock` only after they say yes to reopening it, and then rewrite the scope report from step 1. Do not treat the cluster file as the lock.
+
 ## Human gate(s)
 
-`topic_lock`. The working title in `project.yaml` is not this gate. A feasibility count of zero blocks a yes until the user picks a different angle or explicitly accepts a conceptual review with the count written as `0` from their paste.
+`topic_lock`. The working title in `project.yaml` is not this gate. A feasibility count of zero blocks a yes until the user picks a different angle or explicitly accepts a conceptual review with the count written as `0` from their paste. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only a direct yes sets the lock.
 
 ## Outputs (exact paths + formats)
 
 - `<project>/00-scope/scope_report.md` — headings in step 6, plus `Locked question` after a yes.
+- `<project>/00-scope/export_clusters.md` only when the user asked for the post-export pass.
 - Updates to `project.yaml` (`topic_lock`, `updated`, and `topic` set to the locked question) and one `LOG.md` line.
 
 ## Quality checklist

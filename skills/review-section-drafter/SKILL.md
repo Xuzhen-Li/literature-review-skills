@@ -86,6 +86,16 @@ Use the real path and the real budget. `[NEEDS SOURCE]` and `[VERIFY]` fail the 
 `YYYY-MM-DD | review-section-drafter | drafted S2 | agent`
 
 9. Show the section to the user. Start the next outline section only if the user does not object. If any marker remains, do not continue.
+10. Do not call the draft finished, and do not append `draft_complete`, until every non-structural section has `Status: checked` and this command prints `OK draft set`:
+
+```
+python3 <suite>/skills/review-section-drafter/scripts/check_citations.py \
+  --finish \
+  --outline <project>/07-outline/outline.md \
+  --drafts <project>/09-draft
+```
+
+If the outline has no Limitations section or no Next questions section, stop and return to `review-outline-builder`. A missing file for either section is not a finished draft.
 
 ## Human gate(s)
 
@@ -104,6 +114,7 @@ Examples of the ladder and of a full paragraph are in `references/claim_strength
 - No paragraph states a result from one study as if several studies agreed.
 - Causal verbs appear only when the row's design supports them.
 - The file does not contain a DOI, PMID, page number, or sample size that is not in the evidence row or its reading note.
+- `check_citations.py --finish` prints `OK draft set` before the draft is called complete.
 
 ## Guardrails
 
@@ -111,6 +122,7 @@ Examples of the ladder and of a full paragraph are in `references/claim_strength
 - Do not quote more than a short phrase, and only when the reading note already records the page. Do not paste abstracts.
 - Do not convert citations to a numbered journal style in this skill. That happens in `manuscript-polishing`.
 - Do not draft the abstract, cover letter, or response to reviewers here.
+- Do not treat the draft as finished while Limitations or Next questions are missing or still `Status: draft`.
 
 ## Next step
 

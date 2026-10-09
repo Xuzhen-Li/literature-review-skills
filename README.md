@@ -10,7 +10,9 @@ This suite is for researchers writing a narrative, systematic, scoping, or umbre
 - Six human gates: topic, search strings, inclusion criteria, outline, journal, and final submit. The user passes a gate. The agent records it.
 - An evidence table. Draft sentences map to evidence ids or stay marked `[NEEDS SOURCE]`.
 - A tested deduplicator (`DOI`, then `PMID`, then normalized title and year) that writes PRISMA identification counts from RIS, PubMed NBIB, and CSV exports.
-- Original figures by default. Reused or adapted items are logged for permission instead of being copied.
+- Original figures by default, drawn as an editable SVG plus a PDF. Reused or adapted items are logged for permission instead of being copied or cropped.
+- A narrative review can keep a user-confirmed core and log the rest as not read. Systematic, scoping, and umbrella reviews still screen every deduplicated record.
+- Outlines keep limitations and next questions as separate sections. After journal lock, the style brief is refreshed and polishing follows its heading pattern, abstract shape, and figure budget.
 - English project files, templates, and agent-written outputs.
 
 ## Workflow
@@ -32,7 +34,8 @@ flowchart TD
   outline -->|outline lock| figs[review-figures-and-tables]
   figs --> draft[review-section-drafter]
   draft --> journal[journal-selection]
-  journal -->|journal lock| polish[manuscript-polishing]
+  journal -->|journal lock| refresh[exemplar-review-analysis]
+  refresh --> polish[manuscript-polishing]
   polish --> perms[figure-permissions]
   perms --> submit[submission-package]
   submit -->|final submit by the user| decision([Decision letter])
@@ -46,20 +49,20 @@ flowchart TD
 |---|-------|---------|
 | 0 | `review-orchestrator` | Entry point. Reads `project.yaml` and `LOG.md`, reports the current stage, routes to the next skill, and enforces gates. |
 | 1 | `review-project-setup` | Create the layout, interview the user (topic, field, review type, audience, timeline), and write `project.yaml`. |
-| 2 | `review-scoping-and-gaps` | Landscape scan, candidate angles, gap statements, feasibility counts, and one recommended angle. Gate: topic lock. |
-| 3 | `search-strategy-builder` | PICO, PEO, or SPIDER concepts to synonyms, MeSH or Emtree, and field tags; PubMed, Web of Science, and Scopus strings; test-run counts; PRISMA-S block. Gate: search lock. |
+| 2 | `review-scoping-and-gaps` | Landscape scan, candidate angles, gap statements, feasibility counts, and one recommended angle. Gate: topic lock. Optional post-export clustering can ask to reopen that lock. |
+| 3 | `search-strategy-builder` | PICO, PEO, or SPIDER concepts to synonyms, MeSH or Emtree, and field tags; PubMed, Web of Science, and Scopus strings; test-run counts; PRISMA-S block. Gate: search lock. Optional wide, middle, and tight strings when a hit count is extreme; one string stays locked. |
 | 4 | `search-export-and-dedup` | Export the searches (browser if the user is driving it, otherwise RIS, NBIB, or CSV), merge and deduplicate, and write PRISMA identification counts. |
-| 5 | `literature-screening` | Inclusion and exclusion criteria, title/abstract then full-text screening with reasons, optional Cohen's kappa, and PRISMA 2020 flow numbers. |
-| 6 | `zotero-library-sync` | Import included records to Zotero, map collections, and record legal full-text retrieval. No shadow libraries. |
+| 5 | `literature-screening` | Inclusion and exclusion criteria, title/abstract then full-text screening with reasons, optional Cohen's kappa, and PRISMA 2020 flow numbers. Narrative reviews instead keep a user-sized core and log the rest as not read. |
+| 6 | `zotero-library-sync` | Import included records to Zotero, map collections, and record legal full-text retrieval. The user confirms a collection checklist. No shadow libraries and no desktop control. Optional note export only after they ask. |
 | 7 | `paper-deep-reading` | Per-paper notes and evidence-table rows. Short quotes only, with page numbers. |
-| 8 | `exemplar-review-analysis` | Read 3-5 recent reviews and write a style brief (structure, length, figures, citation density, tone). |
-| 9 | `review-outline-builder` | Thematic outline with section claims, evidence ids, planned figures, and a word budget. Gate: outline lock. |
-| 10 | `review-figures-and-tables` | Plan an original Fig. 1, synthesis tables, and a ledger of original, adapted, or reused items. Specs, not copied images. |
-| 11 | `review-section-drafter` | Draft one section at a time from the outline and the evidence table, with hedges matched to the evidence. |
-| 12 | `journal-selection` | Shortlist 3-5 journals from official pages (scope, review article types, invitation rules, OA and APC, turnaround, indexing) and recommend one. Gate: journal lock. |
-| 13 | `manuscript-polishing` | Fit the draft to the journal, edit language, and audit claims against the evidence table. No new claims. |
+| 8 | `exemplar-review-analysis` | Read 3-5 recent reviews the user can open and write a style brief. After journal lock, refresh that brief from reviews in the locked journal. |
+| 9 | `review-outline-builder` | Thematic outline with section claims, evidence ids, planned figures, and a word budget, including limitations and next questions. Systematic reviews also get a registration reminder and a bias-tool checklist. Gate: outline lock. |
+| 10 | `review-figures-and-tables` | Plan an original Fig. 1 argument map, synthesis tables, and a ledger. Write an SVG and a PDF for each original item. |
+| 11 | `review-section-drafter` | Draft one section at a time from the outline and the evidence table, with hedges matched to the evidence. A finished draft must include limitations and next questions. |
+| 12 | `journal-selection` | Shortlist 3-5 journals from official pages (scope, review article types, invitation rules, OA and APC, turnaround, indexing) and recommend one. A partition or citation metric is recorded only from an official page opened that day. Gate: journal lock. |
+| 13 | `manuscript-polishing` | Fit the draft to the refreshed style brief and the journal, edit language, and audit claims against the evidence table. No new claims. |
 | 14 | `figure-permissions` | For each reused or adapted item, record the license, RightsLink or publisher request, credit line, and remaining risk. |
-| 15 | `submission-package` | Cover letter, title page, declarations, suggested reviewers with a conflict check, and the upload checklist. |
+| 15 | `submission-package` | Cover letter (markdown and docx), a field guide quoted from the author page, title page, declarations, suggested reviewers with a conflict check, and the upload checklist. Highlights, and a visual abstract as an original image, are drafted only when that page requires them. |
 | 16 | `reviewer-response` | Number every comment and draft a point-by-point response that cites only changes that were made. |
 
 ## Install
@@ -128,9 +131,9 @@ That triggers `review-project-setup`. When `project.yaml` exists, say `what is t
 2. Unknown identifiers and numbers are `[VERIFY]`. The agent does not invent DOIs, PMIDs, authors, years, journals, or statistics.
 3. The agent stops at the six gates. Database logins, payments, copyright transfer, and the journal Submit button stay with the user.
 4. Impact factor, APC, word limits, and scope are copied from the official journal page and dated.
-5. Figures are original unless the ledger says adapted or reused, in which case `figure-permissions` runs before submission.
+5. Figures are original SVG and PDF files unless the ledger says adapted or reused, in which case `figure-permissions` runs before submission. Published figures are not cropped.
 6. One project folder. A skill reads earlier folders and writes its own outputs.
-7. Decisions are appended to `LOG.md` and are not deleted.
+7. Decisions are appended to `LOG.md` and are not deleted. A decision card, when used, does not replace a yes or no lock.
 
 ## Disclaimer
 

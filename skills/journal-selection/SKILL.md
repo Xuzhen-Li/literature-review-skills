@@ -37,7 +37,16 @@ A full draft exists, or the user has asked for a journal before drafting and acc
    - reference style, or `not stated`
    - turnaround, or `not stated` (do not import a number from a third-party site)
    - whether review is double-anonymized
-4. Impact factor: write a number only if you saw it on the journal's own page or in Clarivate Journal Citation Reports opened in this session (https://jcr.clarivate.com/). Include the JCR year that was on screen. Otherwise write `Impact factor: [VERIFY]`. Put the factor in the `fit` cell or under the table, not as a reason to override scope.
+4. If the user wants a citation metric, including an impact factor or a JCR quartile, or a national partition, record it only from an official page opened that day. Use the journal's own page or Clarivate Journal Citation Reports (https://jcr.clarivate.com/) for a citation metric, including a JCR quartile. For a national partition, open the official list the user named and copy that page's own label. Do not open LetPub, SCImago, journal finders, or other matcher sites. Add the lines under the table, or omit them when the user did not ask:
+
+```
+Citation metric for Journal Name: 4.2 (2024 Journal Impact Factor)
+Metric source for Journal Name: verified on YYYY-MM-DD at https://jcr.clarivate.com/...
+National partition for Journal Name: [label copied from the official list]
+Partition source for Journal Name: verified on YYYY-MM-DD at https://...
+```
+
+Do not put a quartile or an impact-factor number in the table or the fit cell. A JCR quartile is a citation metric, not a national partition. If you did not open the page, omit the lines. Do not write them from memory.
 5. Indexing: if the author page claims MEDLINE, Scopus, Web of Science, or DOAJ, confirm on the official list in `references/official_sources.md` and date that check too. If you did not open the list, the indexing cell is `[VERIFY]`.
 6. Write `<project>/11-journal/journal_shortlist.md` with the table from `references/shortlist_template.md`. Three to five data rows. The `verified` cell is exactly:
 
@@ -73,17 +82,18 @@ Fix every `ERROR` until it prints `OK shortlist`.
 
 ## Human gate(s)
 
-Journal lock. A passing checker is not the lock. If the user refuses, append `journal lock refused | human` and stop. `manuscript-polishing` does not start without the lock.
+Journal lock. A passing checker is not the lock. If the user refuses, append `journal lock refused | human` and stop. `manuscript-polishing` does not start without the lock. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only a direct yes sets the lock.
 
 ## Outputs (exact paths + formats)
 
-- `<project>/11-journal/journal_shortlist.md` — the 12-column table plus the four lines in step 7.
+- `<project>/11-journal/journal_shortlist.md` — the 12-column table plus the four lines in step 7. Optional partition and citation-metric lines are included only when the user asked and the source page was opened that day.
 
 ## Quality checklist
 
 - The checker prints `OK shortlist`.
 - Every recommended journal was opened on an official author page, and the `verified` sentence matches that URL and today's date.
-- No impact factor, APC, or turnaround number was copied from a third-party ranking or a search snippet.
+- No impact factor, APC, quartile, or turnaround number was copied from a third-party ranking, a matcher site, or a search snippet.
+- A partition or citation metric has a same-day official source line, or it is absent.
 - Invited-only journals are not recommended unless the invitation line is present.
 - The file contains 3 to 5 journals, not a longer shopping list.
 
@@ -95,4 +105,4 @@ Journal lock. A passing checker is not the lock. If the user refuses, append `jo
 
 ## Next step
 
-`manuscript-polishing`, after the journal lock. If the locked word limit is below the outline target, polishing cuts to the limit and logs every cut. It does not reopen the science.
+`exemplar-review-analysis` to refresh the style brief from lawful reviews in the locked journal, then `manuscript-polishing`. If the locked word limit is below the outline target, polishing cuts to the limit and logs every cut. It does not reopen the science.

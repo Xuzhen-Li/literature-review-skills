@@ -12,11 +12,12 @@ description: >
 
 ## When to use
 
-Every outline section has a checked draft, and the journal lock has been passed. This skill edits language and format. It does not add scientific claims.
+Every outline section has a checked draft, the journal lock has been passed, and `06-exemplars/style_brief.md` says `Refreshed after journal lock: yes` for that journal. This skill edits language and format. It does not add scientific claims.
 
 ## Inputs (paths) / Preconditions
 
 - `<project>/11-journal/journal_shortlist.md` with `journal lock` already in `LOG.md`. Read the locked journal's word limit, reference style, and `Double-anonymized` line.
+- `<project>/06-exemplars/style_brief.md` with `Refreshed after journal lock: yes`, a heading pattern, an abstract shape, and a figure budget.
 - `<project>/09-draft/S*.md` and `<project>/07-outline/outline.md`.
 - `<project>/evidence/evidence_table.csv`
 - `<project>/08-figures/figure_ledger.csv`
@@ -36,7 +37,17 @@ python3 <suite>/skills/manuscript-polishing/scripts/assemble_manuscript.py \
   --output <project>/10-polish/manuscript.md
 ```
 
-2. Add a title and an abstract at the top of `manuscript.md`. The abstract may only restate claims that already appear, with the same evidence IDs. If the journal is double-anonymized, do not put author names, affiliations, or funding in this file. Those stay on the title page.
+2. Apply `06-exemplars/style_brief.md` before any other edit. Set the `##` headings to the `Heading pattern` line, in that order, including Limitations and Next questions. If the outline titles do not match that pattern, stop and ask the user to reopen the outline lock. Do not drop either required section. Write the abstract with the `Abstract shape` labels in order (`background` becomes `**Background.**`), using only claims already in the drafts. Keep the same evidence IDs. Unique `Fig. N` mentions must not exceed `Figure budget`. If the journal is double-anonymized, do not put author names, affiliations, or funding in this file. Those stay on the title page. Then run:
+
+```
+python3 <suite>/skills/manuscript-polishing/scripts/check_style_fit.py \
+  --brief <project>/06-exemplars/style_brief.md \
+  --manuscript <project>/10-polish/manuscript.md \
+  --journal "<locked journal name>"
+```
+
+Do not continue while this command fails. Log heading and abstract edits as `structure` or `format` in the change log you create in the next step. Create that log before the edits if you need a row for them; an empty log with only the header is allowed until the first edit.
+
 3. Create `<project>/10-polish/change_log.csv` with the header in `references/change_log_template.md` before the first edit. Every later edit gets a row. Allowed `change_type` values: `hedge`, `language`, `consistency`, `citation`, `format`, `structure`, `cut_to_limit`. There is no type for a new claim. `after` may be `[deleted]` only for `cut_to_limit` or `structure`.
 4. If you drop an outline evidence ID, the reason cell must contain the words `dropped E014` (real ID). If you keep an ID, it stays in the manuscript as `(Smith, 2020; E014)` or, after you convert the style, as the formatted citation plus `<!-- E014 -->`.
 5. Audit citations:
@@ -62,7 +73,7 @@ python3 <suite>/skills/manuscript-polishing/scripts/polish_checks.py \
 
 7. Fill `<project>/10-polish/consistency.md` from `references/consistency_checklist.md`. One row per term. Define an abbreviation at first use in the abstract and again at first use in the main text. Do not introduce an abbreviation you use fewer than three times.
 8. Apply the locked journal's word limit by cutting, and log each cut. Do not delete the only citation for a sentence you keep. Match heading levels and spelling (US or UK) to the author guidelines. Reference style: convert each key from the evidence row's bibliographic fields. If a volume, page, or DOI is blank in the row, write `[VERIFY]` and do not invent it. Numbered styles still keep the `<!-- E014 -->` marker in the markdown.
-9. Export. Pandoc (https://pandoc.org/MANUAL.html):
+9. Export only after `check_style_fit.py` has printed `OK style fit`. Pandoc (https://pandoc.org/MANUAL.html):
 
 ```
 pandoc "<project>/10-polish/manuscript.md" \
@@ -103,7 +114,8 @@ No separate project-level gate. The user accepts the change log before the docx 
 
 ## Quality checklist
 
-- Both checkers print `OK`.
+- Both checkers print `OK`, and `check_style_fit.py` prints `OK style fit`.
+- Headings, abstract labels, and the figure count follow the refreshed style brief.
 - Every change-log `after` cell is free of block phrases.
 - Every outline evidence ID is still cited, or its drop is logged as `dropped E###`.
 - The manuscript cites no ID that is absent from the outline and the evidence table.

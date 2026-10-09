@@ -8,7 +8,8 @@ Open these yourself. A search snippet is not a check. Date every check in the sh
 | DOAJ listing | https://doaj.org/ |
 | MEDLINE / NLM catalog | https://www.ncbi.nlm.nih.gov/nlmcatalog/ |
 | Web of Science Master Journal List | https://mjl.clarivate.com/home |
-| Journal Citation Reports (impact factor; access-controlled) | https://jcr.clarivate.com/ |
+| Journal Citation Reports (impact factor and JCR quartile; access-controlled) | https://jcr.clarivate.com/ |
+| A national partition or other quartile the user asked for | That list's own site, opened the same day. Not a journal finder or a ranking blog. |
 | Scopus source list | https://www.elsevier.com/products/scopus/content |
 | ICMJE recommendations, when the journal says it follows them | https://www.icmje.org/recommendations/ |
 

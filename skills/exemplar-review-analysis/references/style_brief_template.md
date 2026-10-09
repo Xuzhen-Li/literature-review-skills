@@ -43,4 +43,10 @@ Prose, figures, and compiled tables from these reviews.
 - Sections to include:
 - Sections to skip, with why:
 - These numbers are a starting point for review-outline-builder, not a lock.
+- Refreshed after journal lock: no
+- Locked journal: undecided
+- Included-set refresh: no
+- Heading pattern: Introduction | Limitations | Next questions | Conclusions
+- Abstract shape: background; aim; scope; roadmap
+- Figure budget: [integer]
 ```

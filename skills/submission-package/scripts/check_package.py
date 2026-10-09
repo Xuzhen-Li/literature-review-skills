@@ -6,8 +6,11 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
+
+from export_cover_letter import docx_plain_text
 
 ROLES = {
     "Conceptualization",
@@ -50,7 +53,17 @@ FILES = {
     "declarations": "declarations.md",
     "suggested_reviewers": "suggested_reviewers.md",
     "checklist": "file_checklist.md",
+    "field_guide": "portal_field_guide.md",
 }
+EVIDENCE_RE = re.compile(r"\bE\d{3,}\b")
+BLOCKED_GUIDE_HOSTS = (
+    "letpub.com",
+    "scimagojr.com",
+    "wikipedia.org",
+    "researchgate.net",
+    "sci-hub",
+    "libgen",
+)
 
 
 def normalize_role(role: str) -> str:
@@ -112,10 +125,130 @@ def _line(text: str, label: str) -> Optional[str]:
     return match.group(1).strip()
 
 
+def check_field_guide(text: str) -> List[str]:
+    """The field guide may quote only lines the agent read on the author page."""
+    errors: List[str] = []
+    source = re.search(r"(?m)^Source:\s*(verified on \d{4}-\d{2}-\d{2} at https://\S+)\s*$", text)
+    if source is None:
+        errors.append("field guide needs 'Source: verified on YYYY-MM-DD at https://...'")
+    else:
+        url = source.group(1).split(" at ", 1)[1]
+        host = url.split("/")[2].lower() if url.startswith("https://") else ""
+        if any(part in host for part in BLOCKED_GUIDE_HOSTS):
+            errors.append("field guide source is not an author page")
+    if re.search(r"(?i)\b(password|cookie|sign in|log in)\b", text):
+        errors.append("field guide must not ask for a login, password, or cookie")
+    fields = re.findall(r"(?m)^## Field:\s*(.+?)\s*$", text)
+    if not fields:
+        errors.append("field guide needs at least one '## Field:' section")
+    quotes = re.findall(r'(?m)^- Quoted line:\s*"(.+)"\s*$', text)
+    if len(quotes) < len(fields) or not quotes:
+        errors.append("each field needs a Quoted line copied in double quotes")
+    if any(not quote.strip() or "[" in quote for quote in quotes):
+        errors.append("a quoted line must be the sentence you read, not a placeholder")
+    return errors
+
+
+def _flag(text: str, label: str) -> Optional[str]:
+    match = re.search(rf"(?m)^{re.escape(label)}:\s*(required|not required)\s*$", text)
+    if match is None:
+        return None
+    return match.group(1)
+
+
+def _claim_text(bullet: str) -> str:
+    text = re.sub(r"\([^)]*E\d{3,}[^)]*\)", "", bullet)
+    text = EVIDENCE_RE.sub("", text)
+    return re.sub(r"\s+", " ", text).strip(" -.;")
+
+
+def _visual_image_errors(directory: Path, message: str = "") -> List[str]:
+    """A required visual abstract is an original SVG plus PDF, not an embedded picture."""
+    svg_path = directory / "visual_abstract.svg"
+    pdf_path = directory / "visual_abstract.pdf"
+    if not svg_path.is_file() or not pdf_path.is_file():
+        return ["a required visual abstract needs visual_abstract.svg and visual_abstract.pdf"]
+    errors: List[str] = []
+    try:
+        root = ET.fromstring(svg_path.read_text(encoding="utf-8"))
+    except (ET.ParseError, OSError, UnicodeError):
+        return ["visual abstract SVG is not valid XML"]
+    texts = [node.text or "" for node in root.iter() if node.tag.endswith("text")]
+    tags = {node.tag.split("}")[-1] for node in root.iter()}
+    blob = " ".join(texts)
+    if not blob.strip():
+        errors.append("visual abstract SVG must keep its wording in editable text")
+    elif message and message.casefold() not in blob.casefold():
+        errors.append("visual abstract SVG text must include the message from visual_abstract.md")
+    if "image" in tags:
+        errors.append("visual abstract SVG must not embed an image")
+    try:
+        if not pdf_path.read_bytes().startswith(b"%PDF"):
+            errors.append("visual abstract PDF is missing")
+    except OSError:
+        errors.append("visual abstract PDF is missing")
+    return errors
+
+
+def _optional_piece(
+    kind: str,
+    body: Optional[str],
+    manuscript: str,
+    required: bool,
+    count_bounds: Tuple[int, int] = (3, 5),
+    max_chars: Optional[int] = None,
+) -> List[str]:
+    errors: List[str] = []
+    if not required:
+        if body is None or body.strip() == "Not required.":
+            return errors
+        errors.append(f"{kind} must be omitted or say 'Not required.' when the author page does not ask for it")
+        return errors
+    if body is None or body.strip() in {"", "Not required."}:
+        errors.append(f"{kind} is required by the author page")
+        return errors
+    if not manuscript:
+        errors.append(f"{kind} needs the polished manuscript text")
+        return errors
+    if kind == "highlights":
+        bullets = [line.strip()[2:].strip() for line in body.splitlines() if line.strip().startswith("- ")]
+        low, high = count_bounds
+        if not low <= len(bullets) <= high:
+            errors.append(f"highlights need {low} to {high} bullets, found {len(bullets)}")
+        manuscript_ids = set(EVIDENCE_RE.findall(manuscript))
+        folded = manuscript.casefold()
+        for bullet in bullets:
+            ids = set(EVIDENCE_RE.findall(bullet))
+            claim = _claim_text(bullet)
+            if not ids or not ids <= manuscript_ids or claim.casefold() not in folded:
+                errors.append("each highlight must be a sentence already in the polished manuscript")
+                break
+            if max_chars is not None and len(claim) > max_chars:
+                errors.append(
+                    f"a highlight is longer than the author-page limit of {max_chars} characters"
+                )
+                break
+    else:
+        message = re.search(r"(?m)^-\s+Message:\s*(.+?)\s*$", body)
+        ids = set(EVIDENCE_RE.findall(body))
+        if message is None or message.group(1).casefold() not in manuscript.casefold():
+            errors.append("visual abstract message must be copied from the polished manuscript")
+        elif not ids or not ids <= set(EVIDENCE_RE.findall(manuscript)):
+            errors.append("visual abstract evidence IDs must already be in the polished manuscript")
+        if not re.search(r"(?m)^-\s+Rights:\s*original\s*$", body):
+            errors.append("visual abstract rights must be original")
+        if re.search(r"(?i)\bcrop\b|reproduced from", body):
+            errors.append("visual abstract must not crop or reuse a published figure")
+    return errors
+
+
 def check_package(
     parts: Dict[str, str],
     ready: bool = True,
     shortlist_text: str = "",
+    cover_docx: Optional[bytes] = None,
+    manuscript_text: str = "",
+    package_dir: Optional[Path] = None,
 ) -> List[str]:
     """Check submission texts. ready=True is the final-submit check."""
     errors: List[str] = []
@@ -240,6 +373,59 @@ def check_package(
         errors.append("checklist missing ## Upload order")
     if re.search(r"^Highlights:\s*(required|not required)\s*$", checklist, re.M) is None:
         errors.append("checklist needs 'Highlights: required' or 'Highlights: not required'")
+    if re.search(r"^Visual abstract:\s*(required|not required)\s*$", checklist, re.M) is None:
+        errors.append("checklist needs 'Visual abstract: required' or 'Visual abstract: not required'")
+    errors.extend(check_field_guide(parts["field_guide"]))
+    highlights_flag = _flag(checklist, "Highlights")
+    visual_flag = _flag(checklist, "Visual abstract")
+    count_match = re.search(r"(?m)^Highlights count:\s*(\d+)(?:\s*-\s*(\d+))?\s*$", checklist)
+    if count_match:
+        left = int(count_match.group(1))
+        right = int(count_match.group(2) or left)
+        count_bounds = (min(left, right), max(left, right))
+    else:
+        count_bounds = (3, 5)
+    max_match = re.search(r"(?m)^Highlights max characters:\s*(\d+)\s*$", checklist)
+    max_chars = int(max_match.group(1)) if max_match else None
+    if highlights_flag is not None:
+        errors.extend(
+            _optional_piece(
+                "highlights",
+                parts.get("highlights"),
+                manuscript_text,
+                highlights_flag == "required",
+                count_bounds,
+                max_chars,
+            )
+        )
+    if visual_flag is not None:
+        errors.extend(
+            _optional_piece(
+                "visual abstract",
+                parts.get("visual_abstract"),
+                manuscript_text,
+                visual_flag == "required",
+            )
+        )
+    if visual_flag == "required" and ready and package_dir is not None:
+        message = ""
+        visual_body = parts.get("visual_abstract") or ""
+        found = re.search(r"(?m)^-\s+Message:\s*(.+?)\s*$", visual_body)
+        if found:
+            message = found.group(1).strip()
+        errors.extend(_visual_image_errors(package_dir, message))
+    if ready:
+        if cover_docx is None:
+            errors.append("cover letter docx is missing")
+        else:
+            extracted = docx_plain_text(cover_docx)
+            if extracted is None:
+                errors.append("cover letter docx is not a word-processor file")
+            else:
+                if page_title and page_title not in extracted:
+                    errors.append("cover letter docx does not contain the title")
+                if "not under consideration elsewhere" not in extracted:
+                    errors.append("cover letter docx is missing the overlap sentence")
     if shortlist_text and re.search(r"^Double-anonymized:\s*yes\s*$", shortlist_text, re.M):
         if "Manuscript contains no author names" not in checklist:
             errors.append(
@@ -324,14 +510,25 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("directory", type=Path)
     parser.add_argument("--draft", action="store_true")
     parser.add_argument("--shortlist", type=Path)
+    parser.add_argument("--manuscript", type=Path)
     args = parser.parse_args(argv)
     shortlist = ""
     if args.shortlist:
         shortlist = args.shortlist.read_text(encoding="utf-8")
+    cover_docx = None
+    docx_path = args.directory / "cover_letter.docx"
+    if docx_path.is_file():
+        cover_docx = docx_path.read_bytes()
+    manuscript_text = ""
+    if args.manuscript:
+        manuscript_text = args.manuscript.read_text(encoding="utf-8")
     errors = check_package(
         load_parts(args.directory),
         ready=not args.draft,
         shortlist_text=shortlist,
+        cover_docx=cover_docx,
+        manuscript_text=manuscript_text,
+        package_dir=args.directory,
     )
     if errors:
         for error in errors:

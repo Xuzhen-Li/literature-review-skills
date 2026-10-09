@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 - 2026-10-09
+
+- Narrative reviews can rank the deduplicated library and keep a user-sized core. Records left out are logged as not read. Systematic, scoping, and umbrella reviews still use the full eligibility screen.
+- Each original figure or table is written as an editable SVG plus a PDF. Fig. 1 stays an argument map. Published figures are not cropped.
+- Outlines require separate limitations and next-questions sections. The section drafter will not call a draft finished while those sections are missing. Systematic outlines add a registration reminder and a bias-tool checklist, and they leave pooled estimates out unless the user asks.
+- After journal lock, the style brief is refreshed from lawful reviews in that journal. Polishing applies its heading pattern, abstract shape, and figure budget before the word-processor export.
+- Optional passes: wide, middle, and tight search strings when a hit count is extreme; post-export title clustering that may ask to reopen the topic lock; a Zotero collection checklist; note export only after the user asks; a national partition or citation metric copied from an official page opened that day; a cover-letter docx and an author-page field guide; highlights, using the count and character limit that page states, and a visual abstract as an original image only when that page requires them; decision cards that do not replace a yes or no lock.
+
 ## 0.1.0 - 2026-10-09
 
 Initial release of the literature-review skill suite described in `docs/DESIGN.md`.

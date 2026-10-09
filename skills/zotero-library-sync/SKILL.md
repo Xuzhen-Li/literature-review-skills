@@ -3,9 +3,11 @@ name: zotero-library-sync
 description: >
   Imports the included records into Zotero, maps them to thematic
   collections, and records a legal full-text route (Unpaywall, publisher,
-  institutional access, or interlibrary loan) in pdf_status.csv. Trigger
-  on "add to Zotero", "find the PDFs", "Unpaywall", or "full text".
-  Do not use it to screen eligibility or to fetch unauthorized copies.
+  institutional access, or interlibrary loan) in pdf_status.csv.   Trigger
+  on "add to Zotero", "find the PDFs", "Unpaywall", "full text",
+  "collection checklist", or "export notes". Do not use it to screen
+  eligibility, to fetch unauthorized copies, or to attach notes before
+  the user asks and the reading notes exist.
 ---
 
 # Zotero library sync
@@ -53,6 +55,27 @@ record_id,citation_key,doi,pmid,title,oa_status,pdf_url,retrieval_route,pdf_stat
 `retrieval_route` is `zotero`, `unpaywall`, `publisher`, `repository`, `ill`, or `none`. `pdf_status` is `available`, `requested_ill`, `no_legal_copy_found`, or `user_has_pdf`. `pdf_url` is an Unpaywall, publisher, or repository URL, or empty. `checked_on` is today's date. `local_path` is the path the user gives after they save the file, or empty.
 
 8. Append `YYYY-MM-DD | zotero-library-sync | pdf status written for <N> records | agent`.
+9. Write `04-library/collection_checklist.tsv` with the header `theme,record_id,user_confirmed`. Use the theme names from `04-library/collections.md`, at most eight. Every included `record_id` appears at least once. Set `user_confirmed` to `no` until the user checks the list against the collections they created. Do not drive Zotero from desktop control, and do not click through the library for them. When they confirm, set the matching cells to `yes` and run:
+
+```
+python3 <suite>/skills/zotero-library-sync/scripts/check_collections.py \
+  --checklist <project>/04-library/collection_checklist.tsv \
+  --included <project>/03-screening/included.tsv \
+  --ready
+```
+
+`OK collections` is required before deep reading. Append `YYYY-MM-DD | zotero-library-sync | collection checklist confirmed | human`.
+10. Export project notes only after `paper-deep-reading` has written `05-reading/` and the user asks. Do not run this step in the same pass as the PDF status table, and do not log in.
+
+```
+python3 <suite>/skills/zotero-library-sync/scripts/export_notes.py \
+  --confirm \
+  --reading <project>/05-reading \
+  --out <project>/04-library/note_export \
+  --log <project>/04-library/note_attachment_log.tsv
+```
+
+The user attaches each file. The script does not overwrite a copy that is already in `note_export`. After they confirm an attachment, rerun with `--confirm --mark-attached <citation_key> --log <project>/04-library/note_attachment_log.tsv`. The log is the record of what was attached. A missing `record_id` line blocks that export.
 
 ## Human gate(s)
 
@@ -63,6 +86,8 @@ No project lock. Stop and ask before any step that needs the user's institutiona
 - `04-library/included.ris`
 - `04-library/collections.md`
 - `04-library/pdf_status.csv` — header in step 7, one row per included record
+- `04-library/collection_checklist.tsv` — `theme`, `record_id`, `user_confirmed`
+- `04-library/note_export/` and `04-library/note_attachment_log.tsv` only after the user asks to attach notes
 
 ## Quality checklist
 
@@ -71,6 +96,8 @@ No project lock. Stop and ask before any step that needs the user's institutiona
 - `oa_status` is only a value Unpaywall returned, or `not_checked`.
 - No URL points at an unauthorized copy. If the user pastes one, refuse to store it and record `no_legal_copy_found`.
 - `pdf_url` is empty when `pdf_status` is `no_legal_copy_found` or `requested_ill`.
+- `check_collections.py --ready` prints `OK collections` before reading starts.
+- A note log exists only after `--confirm`, and it lists no note that was not in `05-reading/`.
 
 ## Guardrails
 
@@ -78,7 +105,8 @@ No project lock. Stop and ask before any step that needs the user's institutiona
 - Do not scrape a publisher PDF behind a login by replaying the user's cookies.
 - Do not mark `available` unless the user has the file or an open `url_for_pdf` was returned.
 - Do not change screening decisions from this skill.
+- Do not attach notes, or overwrite an existing export copy, unless the user asked.
 
 ## Next step
 
-`paper-deep-reading` for each included record. A missing PDF does not block a note if the user has another legal copy or chooses to skip that paper; record the skip in `notes` and do not invent findings.
+`paper-deep-reading` for each included record, after `check_collections.py --ready` prints `OK collections`. A missing PDF does not block a note if the user has another legal copy or chooses to skip that paper; record the skip in `notes` and do not invent findings. Note export waits until those notes exist and the user asks.

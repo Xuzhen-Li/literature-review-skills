@@ -9,8 +9,13 @@ Tick a box only when that file is in the project. The ready check fails while an
 - [ ] Line numbers
 
 Highlights: not required
+Visual abstract: not required
 
-Change that line to `Highlights: required` only when the author guidelines say so.
+Change `Highlights` to `required` only when the author guidelines say so. Change `Visual abstract` the same way. When either line says `not required`, do not draft that item.
+
+When the author page states a highlight count, add `Highlights count: 4` or `Highlights count: 3-5`. When it states a character limit, add `Highlights max characters: 85`. The highlights guide at https://www.elsevier.com/researcher/author/tools-and-resources/highlights uses three to five bullets of at most 85 characters including spaces. Use that limit only when the page you opened states it. Each bullet must already appear in the polished manuscript.
+
+A required visual or graphical abstract is one original image: `visual_abstract.svg` and `visual_abstract.pdf`, plus `visual_abstract.md` for the claim. It is not a crop of a published figure (https://www.elsevier.com/researcher/author/tools-and-resources/graphical-abstract).
 
 For a double-anonymized journal, add this line and make it true before you tick the manuscript box:
 

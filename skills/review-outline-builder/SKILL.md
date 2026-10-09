@@ -52,12 +52,13 @@ One sentence ending with a period.
 - Figures/tables: none
 ```
 
-4. Set `Review type` from `project.yaml`. Systematic, scoping, and umbrella outlines need a section whose title contains `Method` (search reporting belongs there; item wording comes from the official PRISMA page you open, not from memory: https://www.prisma-statement.org/prisma-2020). Narrative outlines may omit Methods.
-5. Write the global claim and one claim per section. Each claim is a sentence the section will defend, no stronger than its weakest attached row. End each claim with a period.
-6. `Evidence IDs` lists CSV IDs separated by commas. `none` is allowed only when the title starts with Acknowledgements, Acknowledgments, Funding, or Author contributions. For each ID on a section, set that evidence row's `outline_section` cell to the section id (`S1`, `S2`, ...). Do not add rows and do not change any other cell.
-7. `Word budget` is an integer. Abstract, references, and figure legends stay outside the sum. Section budgets must add up to `Target words`. Take the target from the style brief when it gives one; otherwise set a body target and record why in `LOG.md`.
-8. `Figures/tables` is `none` or a list such as `Fig. 1, Table 1`. Reserve `Fig. 1` for an original overview. Do not plan a copy of a published figure here; that decision belongs to the ledger.
-9. Run:
+4. Set `Review type` from `project.yaml`. Systematic, scoping, and umbrella outlines need a section whose title contains `Method` (search reporting belongs there; item wording comes from the official PRISMA page you open, not from memory: https://www.prisma-statement.org/prisma-2020). Narrative outlines may omit Methods. Every review type also needs two different sections whose titles contain `Limitation` and `Next question`. Do not fold either into the conclusion. Each has its own claim and evidence IDs.
+5. When `review_type` is systematic, copy `references/systematic_methods_checklist.md` to `<project>/07-outline/systematic_methods_checklist.md`. Keep the registration reminder and the bias-tool lines. A registry ID or a tool name stays `none yet` or `not chosen` until you open the official page and replace the source line with `Registry source: verified on YYYY-MM-DD at https://...` or `Official page: verified on YYYY-MM-DD at https://...`. RoB 2, ROBINS-I, and QUADAS-2 / QUADAS-3 are for different primary-study designs. AMSTAR 2 appraises systematic reviews, not primary studies. PROSPERO is only for eligible health-related systematic reviews. The checklist states which page to open. Leave pooling out. If the user asks for pooled estimates, set `Pooling: in scope` and `User asked: yes`, add `- Pooled estimates: in scope` to the outline, and name that work in a section title. Do not calculate a pooled number here.
+6. Write the global claim and one claim per section. Each claim is a sentence the section will defend, no stronger than its weakest attached row. End each claim with a period.
+7. `Evidence IDs` lists CSV IDs separated by commas. `none` is allowed only when the title starts with Acknowledgements, Acknowledgments, Funding, or Author contributions. For each ID on a section, set that evidence row's `outline_section` cell to the section id (`S1`, `S2`, ...). Do not add rows and do not change any other cell.
+8. `Word budget` is an integer. Abstract, references, and figure legends stay outside the sum. Section budgets must add up to `Target words`. Take the target from the style brief when it gives one; otherwise set a body target and record why in `LOG.md`.
+9. `Figures/tables` is `none` or a list such as `Fig. 1, Table 1`. Reserve `Fig. 1` for an original overview. Do not plan a copy of a published figure here; that decision belongs to the ledger.
+10. Run the checker. Add `--checklist <project>/07-outline/systematic_methods_checklist.md` when the review is systematic.
 
 ```
 python3 <suite>/skills/review-outline-builder/scripts/check_outline.py \
@@ -67,26 +68,29 @@ python3 <suite>/skills/review-outline-builder/scripts/check_outline.py \
 
 Fix every `ERROR` line until the command prints `OK outline`.
 
-10. Show the user the global claim, the section titles, the evidence IDs, and the budget sum. Leave `Status: draft`.
-11. Only after the user locks the outline, change the line to `Status: locked`, rerun the command with `--locked`, write the gate using the name in `shared/gates.md` (if that file is absent, use `outline_lock`) without deleting other `project.yaml` keys, and append one line to `LOG.md`:
+11. Show the user the global claim, the section titles, the evidence IDs, and the budget sum. Leave `Status: draft`.
+12. Only after the user locks the outline, change the line to `Status: locked`, rerun the command with `--locked`, write the gate using the name in `shared/gates.md` (if that file is absent, use `outline_lock`) without deleting other `project.yaml` keys, and append one line to `LOG.md`:
 
 `YYYY-MM-DD | review-outline-builder | outline lock passed | human`
 
 ## Human gate(s)
 
-Outline lock. If the user refuses, append `outline lock refused | human` and stop. Do not start `review-section-drafter`. Changing a locked outline later requires the user to clear that lock in `LOG.md` first.
+Outline lock. If the user refuses, append `outline lock refused | human` and stop. Do not start `review-section-drafter`. Changing a locked outline later requires the user to clear that lock in `LOG.md` first. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only a direct yes sets the lock.
 
 ## Outputs (exact paths + formats)
 
-- `<project>/07-outline/outline.md` — markdown in the bullet shape above.
+- `<project>/07-outline/outline.md` — markdown in the bullet shape above, including Limitations and Next questions.
+- `<project>/07-outline/systematic_methods_checklist.md` when the review is systematic.
 
 ## Quality checklist
 
 - `check_outline.py --locked` prints `OK outline` after the user agrees.
 - Every non-structural section has at least one evidence ID that is in the CSV.
 - The word budgets sum to `Target words`.
+- Limitations and Next questions are separate sections, each with a claim and evidence IDs.
 - No section claim states a number, mechanism, or priority that is not in the attached rows.
 - Systematic, scoping, and umbrella outlines contain a Methods section.
+- A systematic outline's checklist prints no errors, and it contains no pooled number unless the user asked and the outline says pooling is in scope.
 
 ## Guardrails
 

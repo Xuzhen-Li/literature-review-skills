@@ -4,16 +4,16 @@ description: >
   Plans original figures and synthesis tables for a review and records each
   item as original, adapted, or reused. Use when the user says "figure plan",
   "Fig. 1", "synthesis table", "comparison matrix", "figure ledger", or
-  "permission status". Do not use to download, screenshot, or redraw a
-  published figure, and do not use to request permission (that is
-  figure-permissions).
+  "permission status", or "draw the original figures". Do not use to
+  download, screenshot, crop, or redraw a published figure, and do not
+  use to request permission (that is figure-permissions).
 ---
 
 # Review figures and tables
 
 ## When to use
 
-The outline is locked. You are deciding what art and tables the review will contain. The product is a specification and a ledger, not an image file copied from a paper.
+The outline is locked. You are deciding what art and tables the review will contain, then drawing each original item as an editable SVG plus a PDF. Adapted and reused items are specified in the ledger and are not drawn here.
 
 ## Inputs (paths) / Preconditions
 
@@ -75,11 +75,22 @@ python3 <suite>/skills/review-figures-and-tables/scripts/validate_ledger.py \
 
 `--strict` is for later, at submission. Do not use it while a row is still `needed`.
 
-9. If any row is `adapted` or `reused`, show the user the row and ask whether to pursue permission or replace it with an original. Record the answer in `LOG.md`:
+9. Draw every `original` item. The script writes `08-figures/fig-1.svg` and `fig-1.pdf` (and `table-1`, `box-1`, and panel letters the same way). Fig. 1 is an argument map. Tables and boxes are column schematics, not copied cells. Adapted and reused rows are skipped. A message that asks to crop a published figure fails the command and writes nothing.
+
+```
+python3 <suite>/skills/review-figures-and-tables/scripts/draw_originals.py \
+  --plan <project>/08-figures/figure_plan.md \
+  --ledger <project>/08-figures/figure_ledger.csv \
+  --out <project>/08-figures
+```
+
+The command must print `OK originals`. Then set each original item's `File:` bullet to its `.svg` path. Evidence IDs from the plan are written into the SVG and the PDF.
+
+10. If any row is `adapted` or `reused`, show the user the row and ask whether to pursue permission or replace it with an original. Record the answer in `LOG.md`:
 
 `YYYY-MM-DD | review-figures-and-tables | Fig. 2 will be requested or replaced | human`
 
-10. Append a one-line decision for the plan itself:
+11. Append a one-line decision for the plan itself:
 
 `YYYY-MM-DD | review-figures-and-tables | figure plan written, N items | agent`
 
@@ -91,15 +102,17 @@ No project-level lock. Stop and ask when any ledger row is `adapted` or `reused`
 
 - `<project>/08-figures/figure_plan.md` — one section per item, bullets listed above.
 - `<project>/08-figures/figure_ledger.csv` — header and values in step 5.
+- `<project>/08-figures/<slug>.svg` and `<slug>.pdf` for each original item (`Fig. 1` is `fig-1`).
 
 ## Quality checklist
 
-- `validate_ledger.py` prints `OK ledger`.
-- `Fig. 1` exists and is `original`.
+- `validate_ledger.py` prints `OK ledger` and `draw_originals.py` prints `OK originals`.
+- `Fig. 1` exists, is `original`, and its SVG says `argument map`.
 - Every plan heading has one ledger row, and every ledger id has a plan section.
+- Every original ledger row has an SVG and a PDF that contain that item's evidence IDs.
 - No row cites a paper that is missing from the evidence table. Add the paper through `paper-deep-reading` first; do not invent a row.
 - Caption credits do not say "with permission" unless `permission_status` is `granted`.
-- No image file in `08-figures/` was downloaded from a paper, a search engine, or a shadow library.
+- No image file in `08-figures/` was downloaded, cropped, or traced from a paper, a search engine, or a shadow library.
 
 ## Guardrails
 
