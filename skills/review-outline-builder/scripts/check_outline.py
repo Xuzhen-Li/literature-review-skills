@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""Validate a review outline: claims, evidence IDs, and word budget."""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import re
+import sys
+from pathlib import Path
+from typing import List, Optional, Sequence, Set
+
+TARGET_RE = re.compile(r"^-\s+Target words:\s*(\d+)\s*$", re.M)
+STATUS_RE = re.compile(r"^-\s+Status:\s*(draft|locked)\s*$", re.M)
+TYPE_RE = re.compile(
+    r"^-\s+Review type:\s*(narrative|systematic|scoping|umbrella)\s*$", re.M
+)
+DATE_RE = re.compile(r"^-\s+Date:\s*(\d{4}-\d{2}-\d{2})\s*$", re.M)
+SECTION_RE = re.compile(r"^## S(\d+)\.\s+(.+?)\s*$", re.M)
+BULLET_RE = re.compile(
+    r"^-\s+(Claim|Evidence IDs|Word budget|Figures/tables):\s*(.*)$"
+)
+EVIDENCE_RE = re.compile(r"\bE\d{3,}\b")
+GLOBAL_RE = re.compile(
+    r"^## Global claim\s*\n+(.+?)(?=\n## |\Z)", re.M | re.S
+)
+ID_COLUMNS = ("evidence_id", "id")
+STRUCTURAL_PREFIXES = (
+    "acknowledgements",
+    "acknowledgments",
+    "funding",
+    "author contributions",
+)
+METHODS_TYPES = {"systematic", "scoping", "umbrella"}
+
+
+def load_evidence_ids(path: Path) -> Set[str]:
+    """Read evidence IDs from a CSV that uses evidence_id or id."""
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        if not reader.fieldnames:
+            raise ValueError(f"{path} has no header")
+        fields = [name.strip() for name in reader.fieldnames]
+        reader.fieldnames = fields
+        column = next((name for name in ID_COLUMNS if name in fields), None)
+        if column is None:
+            raise ValueError(f"{path} needs a column named evidence_id or id")
+        return {
+            (row.get(column) or "").strip()
+            for row in reader
+            if (row.get(column) or "").strip()
+        }
+
+
+def _section_blocks(text: str) -> List[dict]:
+    matches = list(SECTION_RE.finditer(text))
+    blocks = []
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        fields = {}
+        for line in text[start:end].splitlines():
+            bullet = BULLET_RE.match(line.strip())
+            if bullet:
+                fields[bullet.group(1)] = bullet.group(2).strip()
+        blocks.append(
+            {
+                "number": int(match.group(1)),
+                "title": match.group(2).strip(),
+                "fields": fields,
+            }
+        )
+    return blocks
+
+
+def check_outline(
+    text: str,
+    evidence_ids: Optional[Set[str]] = None,
+    require_locked: bool = False,
+) -> List[str]:
+    """Return a list of outline errors. An empty list means the outline passed."""
+    errors: List[str] = []
+    status = STATUS_RE.search(text)
+    if status is None:
+        errors.append("missing '- Status: draft' or '- Status: locked'")
+    elif require_locked and status.group(1) != "locked":
+        errors.append("status is not locked")
+
+    review_type_match = TYPE_RE.search(text)
+    if review_type_match is None:
+        errors.append(
+            "missing '- Review type:' (narrative, systematic, scoping, or umbrella)"
+        )
+        review_type = ""
+    else:
+        review_type = review_type_match.group(1)
+
+    if DATE_RE.search(text) is None:
+        errors.append("missing '- Date: YYYY-MM-DD'")
+
+    target_match = TARGET_RE.search(text)
+    if target_match is None:
+        errors.append("missing '- Target words: <integer>'")
+        target = None
+    else:
+        target = int(target_match.group(1))
+        if target <= 0:
+            errors.append("target words must be positive")
+
+    global_match = GLOBAL_RE.search(text)
+    if global_match is None:
+        errors.append("missing '## Global claim' paragraph")
+    else:
+        claim = " ".join(global_match.group(1).split())
+        if len(claim) < 20 or not claim.endswith("."):
+            errors.append("global claim must be a sentence of at least 20 characters")
+
+    sections = _section_blocks(text)
+    if not sections:
+        errors.append("no '## S<n>. <title>' sections")
+        return errors
+
+    numbers = [section["number"] for section in sections]
+    if numbers != list(range(1, len(numbers) + 1)):
+        errors.append(f"section numbers must be 1..N in order, got {numbers}")
+
+    titles = [section["title"] for section in sections]
+    folded = [title.casefold() for title in titles]
+    if len(set(folded)) != len(folded):
+        errors.append("duplicate section titles")
+    if not any("introduction" in title for title in folded):
+        errors.append("missing a section whose title contains 'Introduction'")
+    if not any("conclusion" in title for title in folded):
+        errors.append("missing a section whose title contains 'Conclusion'")
+    if review_type in METHODS_TYPES and not any("method" in title for title in folded):
+        errors.append("this review type needs a section title containing 'Method'")
+
+    total = 0
+    budgets_complete = True
+    for section in sections:
+        label = f"S{section['number']}"
+        fields = section["fields"]
+        for key in ("Claim", "Evidence IDs", "Word budget", "Figures/tables"):
+            if key not in fields or fields[key] == "":
+                errors.append(f"{label} missing '- {key}:'")
+        claim = fields.get("Claim", "")
+        if claim and (len(claim) < 12 or not claim.endswith(".")):
+            errors.append(f"{label} claim must be a sentence ending with a period")
+        budget_raw = fields.get("Word budget", "")
+        if budget_raw:
+            if not budget_raw.isdigit():
+                errors.append(f"{label} word budget is not an integer")
+                budgets_complete = False
+            else:
+                total += int(budget_raw)
+        else:
+            budgets_complete = False
+        evidence_field = fields.get("Evidence IDs", "")
+        structural = section["title"].casefold().startswith(STRUCTURAL_PREFIXES)
+        if not evidence_field:
+            continue
+        if evidence_field == "none":
+            if not structural:
+                errors.append(
+                    f"{label} uses 'Evidence IDs: none' but is not a structural section"
+                )
+            continue
+        found = EVIDENCE_RE.findall(evidence_field)
+        if not found:
+            errors.append(f"{label} evidence IDs must look like E001")
+        elif evidence_ids is not None:
+            unknown = [item for item in found if item not in evidence_ids]
+            if unknown:
+                errors.append(
+                    f"{label} unknown evidence IDs: {', '.join(unknown)}"
+                )
+
+    if target is not None and target > 0 and budgets_complete and total != target:
+        errors.append(f"word budgets sum to {total}, target is {target}")
+    return errors
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("outline", type=Path)
+    parser.add_argument("--evidence", required=True, type=Path)
+    parser.add_argument(
+        "--locked",
+        action="store_true",
+        help="require '- Status: locked'",
+    )
+    args = parser.parse_args(argv)
+    try:
+        evidence_ids = load_evidence_ids(args.evidence)
+    except (OSError, ValueError) as exc:
+        print(f"ERROR {exc}", file=sys.stderr)
+        return 1
+    text = args.outline.read_text(encoding="utf-8")
+    errors = check_outline(text, evidence_ids, require_locked=args.locked)
+    if errors:
+        for error in errors:
+            print(f"ERROR {error}", file=sys.stderr)
+        return 1
+    print("OK outline")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

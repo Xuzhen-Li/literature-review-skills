@@ -1,0 +1,19 @@
+# Copy into <project>/project.yaml. Gates stay boolean false until the owning skill records a user yes.
+
+title: "Working title"
+topic: "One sentence on what the user wants to know"
+field: "Discipline"
+review_type: systematic
+audience: "Who will read the review"
+timeline: "Target month or date the user gave"
+target_journal: undecided
+language: en
+created: 2026-10-09
+updated: 2026-10-09
+gates:
+  topic_lock: false
+  search_lock: false
+  inclusion_lock: false
+  outline_lock: false
+  journal_lock: false
+  final_submit: false
