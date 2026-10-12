@@ -1,3 +1,5 @@
+[中文](README.zh.md) / [English](README.md)
+
 # literature-review-skills
 
 An agent-agnostic skill suite that takes a researcher from a vague topic to a review manuscript and through revision, with every claim tied to a source the project actually holds. The skills encode public reporting practice (PRISMA 2020, PRISMA-S, Cochrane Handbook chapter 4, JBI scoping guidance, ICMJE, COPE) and the official workflows of PubMed, Web of Science, Scopus, Zotero, Unpaywall, Crossref, and RightsLink. The agent stops at human gates, and it does not invent citations.
