@@ -179,7 +179,14 @@ def test_caption_and_label(tmp_path):
     assert pf.main([str(EXAMPLES / "counts_example.csv"), "--out", str(out),
                     "--label", "Example data"]) == 0
     svg = out.with_suffix(".svg").read_text()
-    assert "Adapted from the PRISMA 2020" in svg and "doi:10.1136/bmj.n71" in svg and "Example data" in svg
+    layout = pf.build_layout(pf.load_counts(EXAMPLES / "counts_example.json"), label="Example data")
+    assert [t for _, _, t in layout["captions"]] == [
+        "Example data. Adapted from the PRISMA 2020 flow diagram "
+        "(Page et al., BMJ 2021; doi:10.1136/bmj.n71)."]
+    alone = pf.build_layout(pf.load_counts(EXAMPLES / "counts_example.json"))
+    assert " ".join(t for _, _, t in alone["captions"]) == pf.CAPTION
+    assert pf.CAPTION.endswith("doi:10.1136/bmj.n71).")
+    assert "Example data." in svg
     assert pf.main([str(EXAMPLES / "counts_example.csv"), "--out", str(out),
                     "--no-caption"]) == 0
     assert "Adapted from" not in out.with_suffix(".svg").read_text()

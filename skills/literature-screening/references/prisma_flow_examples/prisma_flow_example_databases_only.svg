@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="243pt" height="313.65pt" viewBox="0 0 243 313.65" font-family="Arial, Helvetica, sans-serif">
-<rect x="0" y="0" width="243" height="313.65" fill="#FFFFFF"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="243pt" height="304.9pt" viewBox="0 0 243 304.9" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="243" height="304.9" fill="#FFFFFF"/>
 <rect x="3" y="28.8" width="14" height="76.25" fill="#F0F0F0" stroke="#333333" stroke-width="0.5"/>
 <text x="12.8" y="66.92" font-size="8" fill="#000000" text-anchor="middle" transform="rotate(-90 12.8 66.92)">Identification</text>
 <rect x="3" y="119.05" width="14" height="108" fill="#F0F0F0" stroke="#333333" stroke-width="0.5"/>
@@ -60,7 +60,6 @@
 <polygon points="135,155.55 132,156.9 132,154.2" fill="#333333"/>
 <polyline points="123,197.68 132,197.68" fill="none" stroke="#333333" stroke-width="0.5"/>
 <polygon points="135,197.68 132,199.03 132,196.33" fill="#333333"/>
-<text x="3" y="293.15" font-size="7" fill="#6B6B6B">Example data</text>
-<text x="3" y="301.9" font-size="7" fill="#6B6B6B">Adapted from the PRISMA 2020 flow diagram (Page et al., BMJ 2021;</text>
-<text x="7" y="310.65" font-size="7" fill="#6B6B6B">doi:10.1136/bmj.n71)</text>
+<text x="3" y="293.15" font-size="7" fill="#6B6B6B">Example data. Adapted from the PRISMA 2020 flow diagram (Page et al.,</text>
+<text x="7" y="301.9" font-size="7" fill="#6B6B6B">BMJ 2021; doi:10.1136/bmj.n71).</text>
 </svg>

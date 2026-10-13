@@ -34,7 +34,7 @@ PHASE_W = 14.0
 MARGIN = 3.0
 ARROW = 3.0
 CAPTION = ("Adapted from the PRISMA 2020 flow diagram (Page et al., BMJ 2021; "
-           "doi:10.1136/bmj.n71)")
+           "doi:10.1136/bmj.n71).")
 CAPTION_FILL = "#6B6B6B"
 
 # Arial advance widths per 1000 em, ASCII 32-126.
@@ -385,7 +385,8 @@ def build_layout(c: dict, caption: Optional[str] = CAPTION, label: Optional[str]
         y += rh + GAP_Y
     y -= GAP_Y
     captions = []
-    for text in [t for t in (label, caption) if t]:
+    joined = ". ".join(t.rstrip(".") if t is label else t for t in (label, caption) if t)
+    for text in [joined] if joined else []:
         for ind, line in wrap(text, BODY_PT, width - 2 * MARGIN):
             y += BODY_PT * LEAD
             captions.append((MARGIN + ind, y + BODY_PT * 0.3, line))
