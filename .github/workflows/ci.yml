@@ -1,0 +1,72 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+        pandas: ["none", "pandas<3", "pandas>=3"]
+        exclude:
+          - python: "3.10"
+            pandas: "pandas>=3"
+          - python: "3.11"
+            pandas: "pandas<3"
+          - python: "3.12"
+            pandas: "pandas<3"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install test dependencies
+        env:
+          PANDAS_SPEC: ${{ matrix.pandas }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+          if [ "$PANDAS_SPEC" != "none" ]; then python -m pip install "$PANDAS_SPEC"; fi
+      - name: Run tests
+        run: python -m pytest -q
+
+  skills-check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Check SKILL.md frontmatter
+        run: python scripts/check_skills.py skills
+
+  install:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: shellcheck
+        run: shellcheck install.sh
+      - name: Install smoke test
+        run: |
+          for mode in link copy; do
+            home="$(mktemp -d)"
+            HOME="$home" bash install.sh --target all --mode "$mode"
+            HOME="$home" bash install.sh --target all --mode "$mode"
+            for tool in cursor claude codex; do
+              test -f "$home/.$tool/skills/review-orchestrator/SKILL.md"
+            done
+            if [ "$mode" = copy ]; then
+              test -f "$home/.claude/skills/review-orchestrator/shared/gates.md"
+            fi
+          done
+          dry="$(mktemp -d)"
+          HOME="$dry" bash install.sh --dry-run
+          test -z "$(ls -A "$dry")"
