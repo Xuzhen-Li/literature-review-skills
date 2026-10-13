@@ -12,15 +12,18 @@ Options:
   --target <cursor|claude|codex|all>  Tool skill directory (default: all)
   --mode <copy|link>                  Copy files or create symlinks (default: link)
   --dry-run                           Print the plan and write nothing
+  --target agents                     [[TODO-TEXT]]
+  --project DIR                       [[TODO-TEXT]]
+  --uninstall                         [[TODO-TEXT]]
   -h, --help                          Show this help
 
-Copy mode also copies shared/ to <name>/shared in each destination.
-Link mode reaches shared/ through the symlink target (the repo root).
+Copy mode also copies shared/ to <name>/shared in each destination skill.
+Link mode reaches shared/ through the symlink target, requiring the repository root to remain available.
 
 Destinations are under $HOME:
   cursor  ~/.cursor/skills/<name>
   claude  ~/.claude/skills/<name>
-  codex   ~/.codex/skills/<name>
+  codex   [[TODO-TEXT]]
 
 Running the same link install again leaves correct symlinks unchanged.
 A copy install replaces the contents of each destination skill directory.
