@@ -187,12 +187,12 @@ def to_csl(records: list[dict], with_abstract: bool = False) -> list[dict]:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="[[TODO-TEXT: one-line -h description of export_refs.py]]")
-    ap.add_argument("table", type=Path, help="[[TODO-TEXT: help for input table]]")
-    ap.add_argument("--library", type=Path, help="[[TODO-TEXT: help for --library (full author lists by record_id)]]")
-    ap.add_argument("--bib", type=Path, help="[[TODO-TEXT: help for --bib output path]]")
-    ap.add_argument("--csl", type=Path, help="[[TODO-TEXT: help for --csl output path]]")
-    ap.add_argument("--with-abstract", action="store_true", help="[[TODO-TEXT: help for --with-abstract]]")
+    ap = argparse.ArgumentParser(description="Exports a records table to BibTeX and CSL-JSON reference files.")
+    ap.add_argument("table", type=Path, help="The input CSV or TSV spreadsheet file containing the records.")
+    ap.add_argument("--library", type=Path, help="Optional path to the main library CSV file to fill missing fields like the full authors list.")
+    ap.add_argument("--bib", type=Path, help="The output BibTeX file path, which defaults to refs.bib in the same folder as the input table.")
+    ap.add_argument("--csl", type=Path, help="The output CSL-JSON file path, which defaults to refs.json in the same folder as the input table.")
+    ap.add_argument("--with-abstract", action="store_true", help="Adds the abstract field to the exported files.")
     args = ap.parse_args(argv)
 
     rows = read_table(args.table)

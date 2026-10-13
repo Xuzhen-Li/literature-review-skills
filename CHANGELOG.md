@@ -9,6 +9,7 @@
 - Add `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` for Claude Code plugin installation via `/plugin marketplace add` and `/plugin install`.
 - Add root `plugin.json` using the Agent Plugins 1.0.0 schema and `.agents/plugins/marketplace.json`.
 - Document Codex installation via `codex plugin marketplace add` and Cursor local clone path.
+- Added `skills/manuscript-polishing/scripts/export_refs.py` to export CSV and TSV spreadsheet tables to BibTeX and CSL-JSON formats, using the library file to fill missing author details.
 
 ## 0.2.0 - 2026-10-09
 

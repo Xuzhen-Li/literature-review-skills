@@ -12,6 +12,7 @@ This suite is for researchers writing a narrative, systematic, scoping, or umbre
 - Six human gates: topic, search strings, inclusion criteria, outline, journal, and final submit. The user passes a gate. The agent records it.
 - An evidence table. Draft sentences map to evidence ids or stay marked `[NEEDS SOURCE]`.
 - A tested deduplicator (`DOI`, then `PMID`, then normalized title and year) that writes PRISMA identification counts from RIS, PubMed NBIB, and CSV exports.
+- `skills/manuscript-polishing/scripts/export_refs.py`: Exports your records table to BibTeX (a plain text reference format used by LaTeX) and CSL-JSON (a reference format used by Pandoc and Zotero).
 - Original figures by default, drawn as an editable SVG plus a PDF. Reused or adapted items are logged for permission instead of being copied or cropped.
 - A narrative review can keep a user-confirmed core and log the rest as not read. Systematic, scoping, and umbrella reviews still screen every deduplicated record.
 - Outlines keep limitations and next questions as separate sections. After journal lock, the style brief is refreshed and polishing follows its heading pattern, abstract shape, and figure budget.
