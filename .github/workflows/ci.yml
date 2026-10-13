@@ -62,12 +62,17 @@ jobs:
             home="$(mktemp -d)"
             HOME="$home" bash install.sh --target all --mode "$mode"
             HOME="$home" bash install.sh --target all --mode "$mode"
-            for tool in cursor claude codex; do
+            for tool in cursor claude agents; do
               test -f "$home/.$tool/skills/review-orchestrator/SKILL.md"
             done
             if [ "$mode" = copy ]; then
               test -f "$home/.claude/skills/review-orchestrator/shared/gates.md"
             fi
+            test ! -e "$home/.codex/skills"
+            HOME="$home" bash install.sh --target all --mode "$mode" --uninstall
+            test -z "$(ls -A "$home/.cursor/skills")"
+            test -z "$(ls -A "$home/.claude/skills")"
+            test -z "$(ls -A "$home/.agents/skills")"
           done
           dry="$(mktemp -d)"
           HOME="$dry" bash install.sh --dry-run

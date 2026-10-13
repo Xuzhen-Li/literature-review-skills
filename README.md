@@ -70,13 +70,13 @@ flowchart TD
 
 ## Install
 
-`install.sh` links (default) or copies each `skills/<name>` directory that contains `SKILL.md`. Link mode reaches `shared/` through the symlink target so the clone must stay in place, and copy mode copies the repository `shared/` directory into `<name>/shared/` for every skill.
+`install.sh` links (default) or copies each `skills/<name>` directory that contains `SKILL.md` (a skill). Link mode reaches `shared/` through the symlink (a shortcut) target so the clone (the local copy of this repository) must stay in place, and copy mode copies the repository `shared/` directory into `<name>/shared/` for every skill.
 
-| Tool | Destination |
-|------|-------------|
-| Cursor | `~/.cursor/skills/<name>` |
-| Claude Code | `~/.claude/skills/<name>` |
-| Codex | `~/.codex/skills/<name>` |
+| Tool | User Destination | Project Destination |
+|------|------------------|---------------------|
+| Cursor | `~/.cursor/skills/<name>` | `DIR/.cursor/skills/<name>` |
+| Claude Code | `~/.claude/skills/<name>` | `DIR/.claude/skills/<name>` |
+| Codex / agents | `~/.agents/skills/<name>` | `DIR/.agents/skills/<name>` |
 
 ```bash
 bash install.sh --target cursor --mode link
@@ -86,7 +86,13 @@ bash install.sh --target all --dry-run
 bash install.sh -h
 ```
 
-`--target` is `cursor`, `claude`, `codex`, or `all` (default `all`). `--mode` is `link` (default) or `copy`. `--dry-run` prints the plan and writes nothing. A second link install leaves correct symlinks unchanged, and a second copy install replaces each destination skill directory including its `shared/` copy. Start a new session so the tool reloads skills. Paths honor `$HOME`.
+`--target` is `cursor`, `claude`, `codex`, `agents`, or `all` (default `all`, which installs `cursor`, `claude`, and `agents`). `--mode` is `link` (default) or `copy`. `--project DIR` installs to the specified existing directory instead of `$HOME` (the user home directory). `--dry-run` prints the plan and writes nothing. A second link install leaves correct symlinks unchanged, and a second copy install replaces each destination skill directory including its `shared/` copy. Start a new session so the tool reloads skills. Paths honor `$HOME`. On macOS, open a terminal (Applications > Utilities > Terminal) to run commands. On Windows, use Git Bash if Git for Windows is installed, or PowerShell only if `bash` is already on PATH. For example:
+
+```
+bash install.sh --target all --mode link
+```
+
+`--uninstall` removes only this repository's symlinks and copies marked with `.lrs-installed` (a marker file). Unmarked copies from earlier versions are skipped; to remove them, re-run a copy install first or delete them manually. Uninstall also removes dangling symlinks named after a repository skill where the target ends in `/skills/<name>`, but keeps other dangling links. Empty skill root directories are left in place. The old `~/.codex/skills` directory is not cleaned automatically and can be deleted by hand.
 
 Run the tests from this repository:
 

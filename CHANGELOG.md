@@ -3,6 +3,14 @@
 ## Unreleased
 
 - Add `scripts/check_skills.py` and `tests/test_check_skills.py` for portable `SKILL.md` frontmatter checks.
+- Added `agents` to install targets.
+- Added `--project DIR` flag to install into project-specific paths instead of `$HOME`.
+- Added `.lrs-installed` marker file generation for copy mode installations.
+- Changed `codex` target destination to `~/.agents/skills` instead of `~/.codex/skills`.
+- Changed `all` target to install `cursor`, `claude`, and `agents`.
+- `--uninstall` removes only this repository's symlinks and copies marked with `.lrs-installed`, so copies made before the marker existed are skipped.
+- `--uninstall` also removes dangling symlinks named after a repository skill whose target ends in `/skills/<same name>`.
+- The old `~/.codex/skills` directory is not cleaned automatically and can be deleted by hand.
 
 ## 0.3.0 - 2026-10-13
 
