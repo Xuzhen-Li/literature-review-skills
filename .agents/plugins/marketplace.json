@@ -1,0 +1,20 @@
+{
+  "name": "literature-review-skills",
+  "interface": {
+    "displayName": "Literature Review Skills"
+  },
+  "plugins": [
+    {
+      "name": "literature-review-skills",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
