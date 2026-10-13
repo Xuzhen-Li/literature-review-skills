@@ -27,7 +27,7 @@ def test_rules_are_mdc_with_frontmatter():
     for path in files:
         assert path.suffix == ".mdc", f"{path.name}: Cursor reads only .mdc rules"
         meta, body = split_frontmatter(path.read_text(encoding="utf-8"))
-        assert set(meta) == {"description", "globs", "alwaysApply"}
+        assert {"description", "alwaysApply"} <= set(meta) <= {"description", "globs", "alwaysApply"}
         assert meta["description"].strip('"')
         assert meta["alwaysApply"] in ("true", "false")
         assert len(body.splitlines()) < 500

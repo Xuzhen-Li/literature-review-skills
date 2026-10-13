@@ -1,6 +1,5 @@
 ---
 description: "[[TODO-TEXT:cursor-rule-description]]"
-globs:
 alwaysApply: false
 ---
 
