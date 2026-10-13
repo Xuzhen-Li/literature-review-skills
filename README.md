@@ -69,7 +69,7 @@ flowchart TD
 
 ## Install
 
-`install.sh` links (default) or copies each `skills/<name>` directory that contains `SKILL.md`.
+`install.sh` links (default) or copies each `skills/<name>` directory that contains `SKILL.md`. Link mode reaches `shared/` through the symlink target so the clone must stay in place, and copy mode copies the repository `shared/` directory into `<name>/shared/` for every skill.
 
 | Tool | Destination |
 |------|-------------|
@@ -85,7 +85,7 @@ bash install.sh --target all --dry-run
 bash install.sh -h
 ```
 
-`--target` is `cursor`, `claude`, `codex`, or `all` (default `all`). `--mode` is `link` (default) or `copy`. `--dry-run` prints the plan and writes nothing. A second link install leaves correct symlinks unchanged. Start a new session so the tool reloads skills. Paths honor `$HOME`.
+`--target` is `cursor`, `claude`, `codex`, or `all` (default `all`). `--mode` is `link` (default) or `copy`. `--dry-run` prints the plan and writes nothing. A second link install leaves correct symlinks unchanged, and a second copy install replaces each destination skill directory including its `shared/` copy. Start a new session so the tool reloads skills. Paths honor `$HOME`.
 
 Run the tests from this repository:
 
@@ -145,14 +145,25 @@ The suite does not replace the authors' responsibility for the review, for check
 
 MIT. Copyright (c) 2026 Xuzhen Li. See [LICENSE](LICENSE).
 
-## [[TODO-TEXT]]
+## Plugin Installation
 
-[[TODO-TEXT]]
+A plugin is an add on that gives a program new abilities. A marketplace file is a list of details that helps a program understand how to use the plugin. Claude Code uses the `.claude-plugin/` packaging and reads the `.claude-plugin/marketplace.json` file. Type the following commands in the Claude Code chat box.
+
+```text
+/plugin marketplace add Xuzhen-Li/literature-review-skills
+/plugin install literature-review-skills@literature-review-skills
+```
+
+Hosts that support the Agent Plugins standard use the root `plugin.json` packaging. Codex reads the `.agents/plugins/marketplace.json` file. A terminal is a text window where you can type commands directly to your computer. Type the following command in Terminal on macOS or PowerShell on Windows to install for Codex.
 
 ```bash
 codex plugin marketplace add Xuzhen-Li/literature-review-skills
 ```
 
+Cursor has no repository marketplace file. To clone means to download an exact copy of a folder from the internet to your computer. Type the following command in Terminal on macOS or PowerShell on Windows to clone for Cursor.
+
 ```bash
 git clone https://github.com/Xuzhen-Li/literature-review-skills ~/.cursor/plugins/local/literature-review-skills
 ```
+
+A symlink is a shortcut file that points to another folder on your computer. Symlinks under `plugins/local` that point elsewhere are skipped, so you must copy or clone directly there.

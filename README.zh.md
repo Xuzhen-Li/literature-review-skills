@@ -69,7 +69,7 @@ flowchart TD
 
 ## 安装
 
-`install.sh` 脚本会链接（默认）或复制包含 `SKILL.md` 文件的每个 `skills/<name>` 目录。
+`install.sh` 脚本会链接（默认）或复制包含 `SKILL.md` 文件的每个 `skills/<name>` 目录。链接模式通过符号链接目标访问 `shared/`，因此克隆必须保留在原处，而复制模式会将仓库的 `shared/` 目录复制到每个技能的 `<name>/shared/` 中。
 
 | Tool | Destination |
 |------|-------------|
@@ -85,7 +85,7 @@ bash install.sh --target all --dry-run
 bash install.sh -h
 ```
 
-`--target` 参数可指定为 `cursor`、`claude`、`codex` 或 `all`（默认为 `all`）。`--mode` 参数可指定为 `link`（默认）或 `copy`。`--dry-run` 标志仅打印执行计划而不写入文件。第二次 link 安装会保持正确的符号链接不变。请开启新会话以重新加载技能。路径支持 `$HOME`。
+`--target` 参数可指定为 `cursor`、`claude`、`codex` 或 `all`（默认为 `all`）。`--mode` 参数可指定为 `link`（默认）或 `copy`。`--dry-run` 标志仅打印执行计划而不写入文件。第二次 link 安装会保持正确的符号链接不变，而第二次 copy 安装会替换每个目标技能目录及其 `shared/` 副本。请开启新会话以重新加载技能。路径支持 `$HOME`。
 
 运行本仓库的测试：
 
@@ -145,14 +145,25 @@ python3 -m pytest
 
 MIT. Copyright (c) 2026 Xuzhen Li. See [LICENSE](LICENSE).
 
-## [[TODO-TEXT]]
+## 插件安装
 
-[[TODO-TEXT]]
+插件是一种赋予程序新功能的附加组件。市场文件是一份帮助程序了解如何使用插件的详情列表。Claude Code 使用 `.claude-plugin/` 打包格式并读取 `.claude-plugin/marketplace.json` 文件。在 Claude Code 聊天框中输入以下命令。
+
+```text
+/plugin marketplace add Xuzhen-Li/literature-review-skills
+/plugin install literature-review-skills@literature-review-skills
+```
+
+支持 Agent Plugins 标准的宿主使用根目录的 `plugin.json` 打包格式。Codex 读取 `.agents/plugins/marketplace.json` 文件。终端是一个文本窗口，您可以在其中直接向您的计算机输入命令。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Codex 进行安装。
 
 ```bash
 codex plugin marketplace add Xuzhen-Li/literature-review-skills
 ```
 
+Cursor 没有代码库市场文件。克隆意味着将文件夹的精确副本从互联网下载到您的计算机上。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Cursor 进行克隆。
+
 ```bash
 git clone https://github.com/Xuzhen-Li/literature-review-skills ~/.cursor/plugins/local/literature-review-skills
 ```
+
+符号链接是指向计算机上另一个文件夹的快捷方式文件。指向其他地方的 `plugins/local` 下的符号链接会被跳过，因此您必须直接将文件复制或克隆到那里。

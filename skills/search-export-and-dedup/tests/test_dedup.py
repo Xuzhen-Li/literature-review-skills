@@ -220,11 +220,36 @@ def test_pandas_csv_path_matches_stdlib(dedup, tmp_path):
         pytest.skip("pandas is not importable")
     table = tmp_path / "records.csv"
     table.write_text(
-        "Article Title,Year,DOI\nBeta,2020,https://doi.org/10.1/Beta\n",
+        "Article Title,Year,DOI\nBeta,2020,https://doi.org/10.1000/Beta\n",
         encoding="utf-8",
     )
     via_pandas = dedup.parse_file(table, "scopus", use_pandas=True)
     via_stdlib = dedup.parse_file(table, "scopus", use_pandas=False)
     assert via_pandas == via_stdlib
-    assert via_pandas[0]["doi"] == "10.1/beta"
+    assert via_pandas[0]["doi"] == "10.1000/beta"
     assert via_pandas[0]["title"] == "Beta"
+
+
+def test_doi_needs_four_digit_registrant(dedup):
+    # Same rule as Crossref's recommended pattern 10.\d{4,9}/...
+    assert dedup.normalize_doi("https://doi.org/10.1/Beta") == ""
+    assert dedup.normalize_doi("https://doi.org/10.1000/Beta") == "10.1000/beta"
+
+
+def test_pandas_csv_path_keeps_all_fields(dedup, tmp_path):
+    if dedup.load_pandas() is None:
+        pytest.skip("pandas is not importable")
+    table = tmp_path / "records.csv"
+    table.write_text(
+        "Title,Year,DOI,PMID,Authors,Source Title\n"
+        "Alpha,2019,doi:10.1234/ABC.1,12345,Smith J,J Test\n"
+        "NA,,,0001,,\n",
+        encoding="utf-8",
+    )
+    via_pandas = dedup.parse_file(table, "wos", use_pandas=True)
+    via_stdlib = dedup.parse_file(table, "wos", use_pandas=False)
+    assert via_pandas == via_stdlib
+    assert via_pandas[0]["doi"] == "10.1234/abc.1"
+    assert via_pandas[0]["pmid"] == "12345"
+    assert via_pandas[1]["title"] == "NA"
+    assert via_pandas[1]["pmid"] == "1"
