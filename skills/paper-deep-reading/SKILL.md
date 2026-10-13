@@ -10,6 +10,12 @@ description: >
 
 # Paper deep reading
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am paper deep reading. I write a note and evidence rows only from a file you hold, and I do not invent page numbers.
+
 ## When to use
 
 An included record has a legal PDF or other full text the user can open (`04-library/pdf_status.csv` status `available` or `user_has_pdf`). Read one paper at a time. If the status is `no_legal_copy_found` or `requested_ill`, skip that record and say so. Do not read from an abstract alone and call it a deep read.

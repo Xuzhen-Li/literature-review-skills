@@ -12,6 +12,12 @@ description: >
 
 # Submission package
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am the submission package. I assemble the files for you to upload, and I do not submit the manuscript.
+
 ## When to use
 
 The journal is locked, `10-polish/manuscript_polished.docx` exists, citation and overclaim checks passed, and `validate_ledger.py --strict` passed. You prepare files. The user uploads them.
@@ -93,7 +99,7 @@ Use the gate name in `shared/gates.md` when that file exists (fallback `final_su
 
 ## Human gate(s)
 
-Final submit. The user logs in, uploads, pays any APC, and signs any copyright form. You stop when the ready check prints `OK submission package` and the user has the file list. You do not click Submit. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only a direct yes sets the lock.
+Final submit. The user logs in, uploads, pays any APC, and signs any copyright form. You stop when the ready check prints `OK submission package` and the user has the file list. You do not click Submit. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only the exact sentence `I confirm the package is ready for me to submit` sets the lock. A `needs-permission` row in `08-figures/panel_crop_ledger.csv` blocks this lock.
 
 ## Outputs (exact paths + formats)
 

@@ -11,6 +11,12 @@ description: >
 
 # Reviewer response
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am reviewer response. I answer each comment from the decision letter and I cite only changes that were made.
+
 ## When to use
 
 The user has a decision letter and wants a revision, or the letter invites a response. The letter is saved verbatim before you number anything. You do not write a response to a comment that is not in that file.

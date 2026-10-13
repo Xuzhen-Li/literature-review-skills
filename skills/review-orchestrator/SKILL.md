@@ -11,6 +11,12 @@ description: >
 
 # Review orchestrator
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am the review orchestrator. I read the project file and the decision log, name the single next skill, and I do not pass a gate for you.
+
 ## When to use
 
 Use this skill at the start of a session and whenever the user asks what to do next. It does not perform the next skill's work in the same breath as the status report. After the report, follow only the routed skill's `SKILL.md`.
@@ -18,7 +24,7 @@ Use this skill at the start of a session and whenever the user asks what to do n
 ## Inputs (paths) / Preconditions
 
 - `<project>/project.yaml` and `<project>/LOG.md` when they exist.
-- Gate names and pass rules in the suite file `shared/gates.md` (suite root is two levels above this file after symlinks are resolved). The six keys are listed below so this skill still runs if `shared/` is not installed beside it.
+- Gate names and pass rules in the suite file `shared/gates.md` (suite root is two levels above this file after symlinks are resolved). The gate keys are listed below so this skill still runs if `shared/` is not installed beside it.
 - Output paths named in the routing table. Do not create those files here.
 
 `<project>` is the review folder. If the user gives a path, use it. Else if `./project.yaml` exists, use `.`. Else route to `review-project-setup` and ask where to create the folder. Do not guess a path.
@@ -29,7 +35,7 @@ Use this skill at the start of a session and whenever the user asks what to do n
 2. Read `LOG.md` from the bottom. Do not treat an agent line as a user confirmation. Gate lines end with `| human`.
 3. Walk routing rows 1 through 17 in order. Row 0 is this skill and is never the destination. The first row whose condition is true is the next skill. Later files do not cancel an earlier failed gate: if `09-draft/` has prose but `topic_lock` is not true, route back to `review-scoping-and-gaps`.
 4. Print the status report (template below) and stop. Name the skill and the first action from that skill. Do not start a second skill in this turn.
-5. If the user then confirms a gate in this chat, record it only when every file named for that gate in `shared/gates.md` already exists and the reply is a direct yes to the gate question. Set the boolean, append one log line, and route again. Otherwise leave the boolean false.
+5. If the user then confirms a gate in this chat, record it only when every file named for that gate in `shared/gates.md` already exists and `scripts/check_gate_phrase.py` prints `OK gate phrase` for that reply. The reply must be the exact sentence, as the whole message or as its only line. Set the boolean, append one log line, and route again. Otherwise leave the boolean false. `institutional_access` has no required file; the homepage was opened in `review-project-setup`.
 
 Status report:
 
@@ -49,12 +55,12 @@ Do not skip to: <the skill after next>
 | # | Skill | Enter when |
 |---|-------|------------|
 | 0 | `review-orchestrator` | Never selected. It only runs this table. |
-| 1 | `review-project-setup` | `project.yaml` is missing or has no `review_type`. |
+| 1 | `review-project-setup` | `project.yaml` is missing, has no `review_type`, or `institutional_access` is not true. |
 | 2 | `review-scoping-and-gaps` | `topic_lock` is not true. |
 | 3 | `search-strategy-builder` | `topic_lock` is true and `search_lock` is not true. |
 | 4 | `search-export-and-dedup` | `search_lock` is true and `02-records/library.csv` or `02-records/prisma_counts.json` is missing. |
-| 5 | `literature-screening` | The library exists and (`inclusion_lock` is not true, or `03-screening/screening.csv`, `03-screening/prisma_flow.md`, or `03-screening/included.tsv` is missing). When `review_type` is `narrative`, also enter while `03-screening/core_decision.tsv` or `03-screening/not_read.tsv` is missing. |
-| 6 | `zotero-library-sync` | `inclusion_lock` is true, `included.tsv` exists, and (`04-library/pdf_status.csv` is missing or lacks a row for any included `record_id`, or `04-library/collection_checklist.tsv` is missing, or any `user_confirmed` cell is not `yes`). |
+| 5 | `literature-screening` | The library exists and (`inclusion_lock` is not true, or `03-screening/screening.csv`, `03-screening/prisma_flow.md`, or `03-screening/included.tsv` is missing). When `review_type` is `narrative`, also enter while `03-screening/core_decision.tsv`, `03-screening/not_read.tsv`, or `03-screening/cap_overflow.tsv` is missing. |
+| 6 | `zotero-library-sync` | `inclusion_lock` is true, `included.tsv` exists, and (`04-library/pdf_status.csv` is missing or lacks a row for any included `record_id`, or any `pdf_status` is `awaiting_user_upload` or `no_download_permission`, or `04-library/collection_checklist.tsv` is missing, or any `user_confirmed` cell is not `yes`). |
 | 7 | `paper-deep-reading` | Some included `record_id` has neither a `05-reading/*.md` file containing that id nor a `LOG.md` line that records a no-PDF skip for that id. |
 | 8 | `exemplar-review-analysis` | Every included record has a note and `06-exemplars/style_brief.md` is missing. |
 | 9 | `review-outline-builder` | The style brief exists and (`outline_lock` is not true, including when `07-outline/outline.md` is still `Status: draft`, or `review_type` is `systematic` and `07-outline/systematic_methods_checklist.md` is missing). |
@@ -73,10 +79,11 @@ After `final_submit: true` with no decision letter, the report is: waiting for t
 
 ## Human gate(s)
 
-Enforce these six. Do not add others. Questions and required files are in `shared/gates.md`.
+Enforce these seven. Do not add others. Questions and required files are in `shared/gates.md`.
 
 | Key | Owner |
 |-----|--------|
+| `institutional_access` | `review-project-setup` |
 | `topic_lock` | `review-scoping-and-gaps` |
 | `search_lock` | `search-strategy-builder` |
 | `inclusion_lock` | `literature-screening` |
@@ -84,14 +91,14 @@ Enforce these six. Do not add others. Questions and required files are in `share
 | `journal_lock` | `journal-selection` |
 | `final_submit` | `submission-package` |
 
-A checker script printing OK is not a gate. Only a direct user yes, written to `project.yaml` and `LOG.md`, passes a gate.
+`check_gate_phrase.py` printing OK means the sentence matches. It does not pass the gate by itself. Only that user sentence, written to `project.yaml` and `LOG.md`, passes a gate.
 
 ## Outputs (exact paths + formats)
 
 The status report is the reply to the user. Do not write a second status file. The only edits this skill may make are a gate boolean the user just accepted and one appended `LOG.md` line:
 
 ```text
-YYYY-MM-DD | review-orchestrator | <gate key> passed: <short quote of the user yes> | human
+YYYY-MM-DD | review-orchestrator | <gate key> passed: <the exact sentence> | human
 ```
 
 ## Quality checklist

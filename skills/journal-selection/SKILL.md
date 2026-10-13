@@ -10,6 +10,12 @@ description: >
 
 # Journal selection
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am journal selection. I shortlist journals from their official pages and I copy a metric only from a page opened today.
+
 ## When to use
 
 A full draft exists, or the user has asked for a journal before drafting and accepts that `manuscript-polishing` will still have to fit the locked journal's limits. Dynamic facts (scope, article types, APC, word limit, indexing, turnaround, impact factor) are written only after you open an official page, and each fact is dated.
@@ -82,7 +88,7 @@ Fix every `ERROR` until it prints `OK shortlist`.
 
 ## Human gate(s)
 
-Journal lock. A passing checker is not the lock. If the user refuses, append `journal lock refused | human` and stop. `manuscript-polishing` does not start without the lock. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only a direct yes sets the lock.
+Journal lock. A passing checker is not the lock. If the user refuses, append `journal lock refused | human` and stop. `manuscript-polishing` does not start without the lock. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only the exact sentence `I confirm the journal lock` sets the lock.
 
 ## Outputs (exact paths + formats)
 

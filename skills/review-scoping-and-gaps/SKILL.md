@@ -12,6 +12,12 @@ description: >
 
 # Review scoping and gaps
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am review scoping and gaps. I compare candidate angles against the locked review type and I stop at the topic lock until you use the exact sentence.
+
 ## When to use
 
 `project.yaml` exists and `topic_lock` is not true. The product is `00-scope/scope_report.md`, not a search string and not a manuscript outline. After `02-records/library.csv` exists, also use this skill when the user asks for the cluster pass in step 9. That pass does not clear `topic_lock`.
@@ -40,8 +46,8 @@ Ask them to paste the result count and the date shown in PubMed. Until that past
 
 5. Recommend one angle in a short paragraph: fit to review type, a non-`[VERIFY]` count if one exists, and the narrowest question that still has enough records to discuss. If every count is `[VERIFY]`, recommend an angle but say the recommendation is provisional.
 6. Write `00-scope/scope_report.md` with these headings: `Review type`, `Framework`, `Angle A`, `Angle B`, `Angle C`, `Feasibility`, `Recommendation`, `Out of scope`, `Gate`.
-7. Ask: "Pass topic lock on angle [letter]: [title]? Reply yes or no."
-8. On yes: set `gates.topic_lock` to `true`, set `updated` to today, put the locked question at the top of the report under `Locked question`, and append:
+7. Ask: "Pass topic lock on angle [letter]: [title]? Reply with: I confirm the topic lock."
+8. On that exact sentence: set `gates.topic_lock` to `true`, set `updated` to today, put the locked question at the top of the report under `Locked question`, and append:
 
 ```text
 YYYY-MM-DD | review-scoping-and-gaps | topic lock passed: angle <letter> | human
@@ -62,7 +68,7 @@ The groups are token overlap, not a new topic. If the file asks whether to reope
 
 ## Human gate(s)
 
-`topic_lock`. The working title in `project.yaml` is not this gate. A feasibility count of zero blocks a yes until the user picks a different angle or explicitly accepts a conceptual review with the count written as `0` from their paste. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only a direct yes sets the lock.
+`topic_lock`. The working title in `project.yaml` is not this gate. A feasibility count of zero blocks the lock until the user picks a different angle or explicitly accepts a conceptual review with the count written as `0` from their paste. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only the exact sentence sets the lock. `institutional_access` must already be true.
 
 ## Outputs (exact paths + formats)
 
