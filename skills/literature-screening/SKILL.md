@@ -60,6 +60,16 @@ sum of full-text reason counts = full_text_excluded
 
 `full_text_excluded` does not include `FT_NOT_RETRIEVED`. If the sums fail, fix the CSV. Do not edit the flow numbers alone.
 
+   Optional diagram: write `03-screening/prisma_counts_flow.json` (keys in `references/prisma_flow_examples/counts_example.json`) and run:
+
+```bash
+python3 <suite>/skills/literature-screening/scripts/prisma_flow.py \
+  <project>/03-screening/prisma_counts_flow.json \
+  --out <project>/03-screening/prisma_flow
+```
+
+   [[TODO-TEXT]]
+
 8. Append `YYYY-MM-DD | literature-screening | screening complete, included <N> | agent` with N equal to the included-report count.
 
 ## Human gate(s)
@@ -72,6 +82,7 @@ sum of full-text reason counts = full_text_excluded
 - `03-screening/pilot.csv` and `kappa.json` when a dual pilot was run
 - `03-screening/screening.csv` — columns in step 4, or the narrative columns in `references/narrative_core.md`
 - `03-screening/included.tsv` — columns in step 6
+- `03-screening/prisma_flow.svg` and `prisma_flow.pdf` when the optional diagram was drawn
 - `03-screening/prisma_flow.md` — PRISMA 2020 boxes for a full eligibility screen, or the narrative core note
 - Narrative only: `03-screening/narrative_rank.tsv`, `core_decision.tsv`, and `not_read.tsv`
 

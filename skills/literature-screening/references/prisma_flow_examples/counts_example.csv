@@ -1,0 +1,17 @@
+key,value
+databases,1842
+registers,36
+duplicates_removed,512
+automation_removed,0
+other_removed,4
+screened,1362
+screened_excluded,1210
+sought,152
+not_retrieved,7
+assessed,145
+excluded_reason:Wrong study design,48
+excluded_reason:No relevant outcome,39
+excluded_reason:Wrong population,21
+excluded_reason:Duplicate report of same study,6
+studies_included,28
+reports_included,31

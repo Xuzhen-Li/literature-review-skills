@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="238pt" height="329.05pt" viewBox="0 0 238 329.05" font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="238" height="329.05" fill="#FFFFFF"/>
+<rect x="3" y="28.8" width="14" height="85" fill="#F0F0F0" stroke="#333333" stroke-width="0.5"/>
+<text x="12.8" y="71.3" font-size="8" fill="#000000" text-anchor="middle" transform="rotate(-90 12.8 71.3)">Identification</text>
+<rect x="3" y="127.8" width="14" height="143" fill="#F0F0F0" stroke="#333333" stroke-width="0.5"/>
+<text x="12.8" y="199.3" font-size="8" fill="#000000" text-anchor="middle" transform="rotate(-90 12.8 199.3)">Screening</text>
+<rect x="3" y="284.8" width="14" height="41.25" fill="#F0F0F0" stroke="#333333" stroke-width="0.5"/>
+<text x="12.8" y="305.43" font-size="8" fill="#000000" text-anchor="middle" transform="rotate(-90 12.8 305.43)">Included</text>
+<rect x="23" y="3" width="212" height="16" fill="#F0F0F0" stroke="#333333" stroke-width="0.5"/>
+<text x="129" y="13.4" font-size="8" fill="#000000" text-anchor="middle">Identification of studies via databases and registers</text>
+<rect x="23" y="28.8" width="100" height="32.5" fill="#FFFFFF" stroke="#333333" stroke-width="0.5"/>
+<text x="27" y="38.4" font-size="7" fill="#000000">Records identified from:</text>
+<text x="33" y="47.15" font-size="7" fill="#000000">Databases (n = 1842)</text>
+<text x="33" y="55.9" font-size="7" fill="#000000">Registers (n = 36)</text>
+<rect x="135" y="28.8" width="100" height="85" fill="#FFFFFF" stroke="#333333" stroke-width="0.5"/>
+<text x="139" y="38.4" font-size="7" fill="#000000">Records removed before</text>
+<text x="143" y="47.15" font-size="7" fill="#000000">screening:</text>
+<text x="145" y="55.9" font-size="7" fill="#000000">Duplicate records removed</text>
+<text x="149" y="64.65" font-size="7" fill="#000000">(n = 512)</text>
+<text x="145" y="73.4" font-size="7" fill="#000000">Records marked as</text>
+<text x="149" y="82.15" font-size="7" fill="#000000">ineligible by automation</text>
+<text x="149" y="90.9" font-size="7" fill="#000000">tools (n = 0)</text>
+<text x="145" y="99.65" font-size="7" fill="#000000">Records removed for other</text>
+<text x="149" y="108.4" font-size="7" fill="#000000">reasons (n = 4)</text>
+<rect x="23" y="127.8" width="100" height="15" fill="#FFFFFF" stroke="#333333" stroke-width="0.5"/>
+<text x="27" y="137.4" font-size="7" fill="#000000">Records screened (n = 1362)</text>
+<rect x="135" y="127.8" width="100" height="15" fill="#FFFFFF" stroke="#333333" stroke-width="0.5"/>
+<text x="139" y="137.4" font-size="7" fill="#000000">Records excluded (n = 1210)</text>
+<rect x="23" y="156.8" width="100" height="23.75" fill="#FFFFFF" stroke="#333333" stroke-width="0.5"/>
+<text x="27" y="166.4" font-size="7" fill="#000000">Reports sought for retrieval</text>
+<text x="31" y="175.15" font-size="7" fill="#000000">(n = 152)</text>
+<rect x="135" y="156.8" width="100" height="15" fill="#FFFFFF" stroke="#333333" stroke-width="0.5"/>
+<text x="139" y="166.4" font-size="7" fill="#000000">Reports not retrieved (n = 7)</text>
+<rect x="23" y="194.55" width="100" height="23.75" fill="#FFFFFF" stroke="#333333" stroke-width="0.5"/>
+<text x="27" y="204.15" font-size="7" fill="#000000">Reports assessed for</text>
+<text x="31" y="212.9" font-size="7" fill="#000000">eligibility (n = 145)</text>
+<rect x="135" y="194.55" width="100" height="76.25" fill="#FFFFFF" stroke="#333333" stroke-width="0.5"/>
+<text x="139" y="204.15" font-size="7" fill="#000000">Reports excluded:</text>
+<text x="145" y="212.9" font-size="7" fill="#000000">Wrong study design</text>
+<text x="149" y="221.65" font-size="7" fill="#000000">(n = 48)</text>
+<text x="145" y="230.4" font-size="7" fill="#000000">No relevant outcome</text>
+<text x="149" y="239.15" font-size="7" fill="#000000">(n = 39)</text>
+<text x="145" y="247.9" font-size="7" fill="#000000">Wrong population (n = 21)</text>
+<text x="145" y="256.65" font-size="7" fill="#000000">Duplicate report of same</text>
+<text x="149" y="265.4" font-size="7" fill="#000000">study (n = 6)</text>
+<rect x="23" y="284.8" width="100" height="41.25" fill="#FFFFFF" stroke="#333333" stroke-width="0.5"/>
+<text x="27" y="294.4" font-size="7" fill="#000000">Studies included in review</text>
+<text x="31" y="303.15" font-size="7" fill="#000000">(n = 28)</text>
+<text x="27" y="311.9" font-size="7" fill="#000000">Reports of included studies</text>
+<text x="31" y="320.65" font-size="7" fill="#000000">(n = 31)</text>
+<polyline points="73,61.3 73,124.8" fill="none" stroke="#333333" stroke-width="0.5"/>
+<polygon points="73,127.8 71.65,124.8 74.35,124.8" fill="#333333"/>
+<polyline points="73,142.8 73,153.8" fill="none" stroke="#333333" stroke-width="0.5"/>
+<polygon points="73,156.8 71.65,153.8 74.35,153.8" fill="#333333"/>
+<polyline points="73,180.55 73,191.55" fill="none" stroke="#333333" stroke-width="0.5"/>
+<polygon points="73,194.55 71.65,191.55 74.35,191.55" fill="#333333"/>
+<polyline points="73,218.3 73,281.8" fill="none" stroke="#333333" stroke-width="0.5"/>
+<polygon points="73,284.8 71.65,281.8 74.35,281.8" fill="#333333"/>
+<polyline points="123,45.05 132,45.05" fill="none" stroke="#333333" stroke-width="0.5"/>
+<polygon points="135,45.05 132,46.4 132,43.7" fill="#333333"/>
+<polyline points="123,135.3 132,135.3" fill="none" stroke="#333333" stroke-width="0.5"/>
+<polygon points="135,135.3 132,136.65 132,133.95" fill="#333333"/>
+<polyline points="123,164.3 132,164.3" fill="none" stroke="#333333" stroke-width="0.5"/>
+<polygon points="135,164.3 132,165.65 132,162.95" fill="#333333"/>
+<polyline points="123,206.43 132,206.43" fill="none" stroke="#333333" stroke-width="0.5"/>
+<polygon points="135,206.43 132,207.78 132,205.08" fill="#333333"/>
+</svg>

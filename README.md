@@ -93,6 +93,19 @@ Run the tests from this repository:
 python3 -m pytest
 ```
 
+## PRISMA 2020 flow diagram
+
+[[TODO-TEXT]]
+
+```bash
+python3 skills/literature-screening/scripts/prisma_flow.py \
+  skills/literature-screening/references/prisma_flow_examples/counts_example.json \
+  --out prisma_flow
+python3 skills/literature-screening/scripts/prisma_flow.py counts.csv --out prisma_flow --check
+```
+
+![PRISMA 2020 flow example](skills/literature-screening/references/prisma_flow_examples/prisma_flow_example.svg)
+
 ## Quick start
 
 Say: `start a new review on drought responses in grapevine`.

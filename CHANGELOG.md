@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `skills/literature-screening/scripts/prisma_flow.py` draws a PRISMA 2020 flow diagram as SVG and PDF from a JSON or CSV counts file. [[TODO-TEXT]]
+
 ## 0.2.0 - 2026-10-09
 
 - Narrative reviews can rank the deduplicated library and keep a user-sized core. Records left out are logged as not read. Systematic, scoping, and umbrella reviews still use the full eligibility screen.
