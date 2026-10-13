@@ -164,3 +164,39 @@ def test_output_feeds_dedup(sb, tmp_path):
     assert {r["doi"] for r in recs if r["title"] == "Citer A"} == {"10.5556/a"}
     kept, *_ = dedup.deduplicate(recs)
     assert len(kept) == 62
+
+
+def test_seed_csv_with_quoted_newline(sb, tmp_path):
+    seeds = tmp_path / "included.csv"
+    seeds.write_text('record_id,title,doi\nR1,"two\nlines",10.1/a\nR2,x,10.1/b\n')
+    assert sb.read_seeds(seeds) == ["10.1/a", "10.1/b"]
+
+
+def test_doi_is_url_encoded(sb):
+    urls = []
+
+    def opener(req, timeout=None):
+        urls.append(req.full_url)
+        return Resp(b"{}")
+
+    sb.snowball(["10.1/a b#c?d"], client(sb, opener))
+    assert "/doi:10.1/a%20b%23c%3Fd?" in urls[0]
+
+
+def test_http_error_keeps_partial_results(sb, tmp_path, capsys):
+    seeds = tmp_path / "s.txt"
+    seeds.write_text("10.1/seed\n")
+    out = tmp_path / "o.csv"
+    fake = FakeOpenAlex()
+    real = fake.__call__
+
+    def opener(req, timeout=None):
+        if "cites:" in req.full_url:
+            raise urllib.error.HTTPError(req.full_url, 500, "x", {}, None)
+        return real(req, timeout=timeout)
+
+    assert sb.main([str(seeds), "-o", str(out)], client=client(sb, opener)) == 1
+    rows = list(csv.DictReader(out.open()))
+    report = json.loads((tmp_path / "o.json").read_text())
+    assert len(rows) == 60 and report["backward"] == 60 and report["incomplete"]
+    assert "HTTP 500" in capsys.readouterr().err

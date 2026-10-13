@@ -60,7 +60,27 @@ def test_export_columns_and_prior_labels(aio, tmp_path, capsys):
 
 def test_export_label_column_is_an_asreview_name(aio):
     # ASReview reads "included" as its label column (data_format docs).
-    assert "included" in aio.EXPORT_COLUMNS and "included" in aio.LABEL_COLUMNS
+    assert "included" in aio.EXPORT_COLUMNS
+
+
+def test_import_ignores_exported_prior_label_column(aio):
+    with pytest.raises(SystemExit):
+        aio.import_rows([{"lrs_record_id": "R1", "included": "1"}])
+
+
+def test_quoted_multiline_abstract_round_trip(aio, tmp_path):
+    abstract = "Line one,\nline two \"quoted\".\n\nLine four."
+    lib = tmp_path / "library.csv"
+    with lib.open("w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["record_id", "title", "abstract"])
+        w.writerow(["R1", "T", abstract])
+        w.writerow(["R2", "U", "plain"])
+    out = tmp_path / "asreview_in.csv"
+    assert aio.main(["export", str(lib), "-o", str(out)]) == 0
+    rows = aio._read(out)
+    assert [r["lrs_record_id"] for r in rows] == ["R1", "R2"]
+    assert rows[0]["abstract"] == abstract
 
 
 def test_export_rejects_rows_without_text(aio, tmp_path):

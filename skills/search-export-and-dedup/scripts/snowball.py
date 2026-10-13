@@ -47,6 +47,10 @@ class NetworkUnavailable(Exception):
     pass
 
 
+class OpenAlexError(Exception):
+    partial = None
+
+
 def normalize_doi(value) -> str:
     text = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", str(value or "").strip(), flags=re.I)
     return re.sub(r"^doi:\s*", "", text, flags=re.I).rstrip(".").lower()
@@ -96,10 +100,10 @@ class Client:
                     except ValueError:
                         self._sleep(2.0)
                     continue
-                raise SystemExit(f"OpenAlex HTTP {exc.code} for {path}") from None
+                raise OpenAlexError(f"OpenAlex HTTP {exc.code} for {path}") from None
             except (urllib.error.URLError, TimeoutError, OSError) as exc:
                 raise NetworkUnavailable(str(getattr(exc, "reason", exc))) from None
-        raise SystemExit("OpenAlex rate limit: retry later")
+        raise OpenAlexError("OpenAlex rate limit: retry later")
 
 
 def to_row(work: dict, direction: str, seed: str) -> dict:
@@ -137,8 +141,20 @@ def paged(client: Client, filt: str, limit: int | None = None):
 def snowball(seeds: list[str], client: Client, backward=True, forward=True, max_forward=500):
     rows, report = [], {"seeds": len(seeds), "seeds_not_found": [], "backward": 0, "forward": 0,
                         "forward_capped": []}
+    try:
+        _snowball_into(rows, report, seeds, client, backward, forward, max_forward)
+    except OpenAlexError as exc:
+        exc.partial = (rows, report)
+        raise
+    unique = {r["doi"] or r["openalex_id"] for r in rows}
+    report["unique_candidates"] = len(unique - set(seeds))
+    return rows, report
+
+
+def _snowball_into(rows, report, seeds, client, backward, forward, max_forward):
     for seed in seeds:
-        work = client.get(f"/doi:{seed}", {"select": "id,doi,referenced_works,cited_by_count"})
+        work = client.get(f"/doi:{urllib.parse.quote(seed, safe='/')}",
+                          {"select": "id,doi,referenced_works,cited_by_count"})
         if not work:
             report["seeds_not_found"].append(seed)
             continue
@@ -154,17 +170,14 @@ def snowball(seeds: list[str], client: Client, backward=True, forward=True, max_
             for w in paged(client, f"cites:{short_id(work.get('id'))}", limit=max_forward):
                 rows.append(to_row(w, "forward", seed))
                 report["forward"] += 1
-    unique = {r["doi"] or r["openalex_id"] for r in rows}
-    seed_set = set(seeds)
-    report["unique_candidates"] = len(unique - seed_set)
-    return rows, report
 
 
 def read_seeds(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8-sig")
     if path.suffix.lower() in (".csv", ".tsv"):
         dialect = "excel-tab" if path.suffix.lower() == ".tsv" else "excel"
-        rows = list(csv.DictReader(text.splitlines(), dialect=dialect))
+        with path.open(newline="", encoding="utf-8-sig") as fh:
+            rows = list(csv.DictReader(fh, dialect=dialect))
         vals = [r.get("doi", "") for r in rows]
     else:
         vals = text.splitlines()
@@ -190,6 +203,7 @@ def main(argv=None, client: Client | None = None) -> int:
     if not seeds:
         raise SystemExit("no seed DOIs found")
     client = client or Client()
+    status = 0
     try:
         rows, report = snowball(seeds, client, backward=args.direction in ("both", "backward"),
                                 forward=args.direction in ("both", "forward"), max_forward=args.max_forward)
@@ -197,6 +211,12 @@ def main(argv=None, client: Client | None = None) -> int:
         print(json.dumps({"error": "network unavailable", "detail": exc.args[0] if exc.args else ""}),
               file=sys.stderr)
         return 2
+    except OpenAlexError as exc:
+        rows, report = exc.partial
+        report["incomplete"] = True
+        report["error"] = str(exc)
+        print(json.dumps({"error": str(exc), "incomplete": True}), file=sys.stderr)
+        status = 1
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=OUT_COLUMNS)
@@ -206,7 +226,7 @@ def main(argv=None, client: Client | None = None) -> int:
     rep = args.report or args.out.with_suffix(".json")
     rep.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"out": str(args.out), "report": str(rep), **report}))
-    return 0
+    return status
 
 
 if __name__ == "__main__":

@@ -28,19 +28,21 @@ ID_COLUMN = "lrs_record_id"
 EXPORT_COLUMNS = [ID_COLUMN, "title", "abstract", "authors", "keywords", "doi", "year", "journal", "included"]
 SCREENING_COLUMNS = ["record_id", "stage", "screener", "decision", "reason_code",
                      "reason_note", "date", "consensus"]
-LABEL_COLUMNS = ["asreview_label", "included", "label", "final_included", "label_included",
+# Import never reads "included": it carries the prior labels we exported.
+LABEL_COLUMNS = ["asreview_label", "label", "final_included", "label_included",
                  "included_label", "included_final", "included_flag", "include"]
 
 
 def _read(path: Path) -> list[dict]:
-    text = path.read_text(encoding="utf-8-sig")
-    first = text.split("\n", 1)[0]
-    dialect = "excel-tab" if path.suffix.lower() in (".tsv", ".tab") or "\t" in first else "excel"
-    if dialect == "excel" and first.count(";") > first.count(","):
-        reader = csv.DictReader(text.splitlines(), delimiter=";")
-    else:
-        reader = csv.DictReader(text.splitlines(), dialect=dialect)
-    return [{(k or "").strip(): (v or "").strip() for k, v in r.items()} for r in reader]
+    with path.open(newline="", encoding="utf-8-sig") as fh:
+        first = fh.readline()
+        fh.seek(0)
+        dialect = "excel-tab" if path.suffix.lower() in (".tsv", ".tab") or "\t" in first else "excel"
+        if dialect == "excel" and first.count(";") > first.count(","):
+            reader = csv.DictReader(fh, delimiter=";")
+        else:
+            reader = csv.DictReader(fh, dialect=dialect)
+        return [{(k or "").strip(): (v or "").strip() for k, v in r.items()} for r in reader]
 
 
 def prior_labels(screening: list[dict]) -> dict[str, str]:
@@ -84,7 +86,7 @@ def _label(row: dict) -> str:
             if val in ("0", "0.0", "false"):
                 return "0"
             return ""
-    raise SystemExit("no label column (asreview_label / included) in ASReview export")
+    raise SystemExit("no label column (asreview_label) in ASReview export")
 
 
 def import_rows(export: list[dict], screener: str | None = None):
