@@ -11,6 +11,7 @@
 - `--uninstall` removes only this repository's symlinks and copies marked with `.lrs-installed`, so copies made before the marker existed are skipped.
 - `--uninstall` also removes dangling symlinks named after a repository skill whose target ends in `/skills/<same name>`.
 - The old `~/.codex/skills` directory is not cleaned automatically and can be deleted by hand.
+- Added `skills/manuscript-polishing/scripts/export_refs.py` to export CSV and TSV spreadsheet tables to BibTeX and CSL-JSON formats, using the library file to fill missing author details.
 
 ## 0.3.0 - 2026-10-13
 
