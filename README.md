@@ -154,16 +154,16 @@ A plugin is an add on that gives a program new abilities. A marketplace file is 
 /plugin install literature-review-skills@literature-review-skills
 ```
 
-Hosts that support the Agent Plugins standard use the root `plugin.json` packaging. Codex reads the `.agents/plugins/marketplace.json` file. A terminal is a text window where you can type commands directly to your computer. Type the following command in Terminal on macOS or PowerShell on Windows to install for Codex.
+Hosts that support the Agent Plugins standard use the root `plugin.json` packaging. Codex reads the `.agents/plugins/marketplace.json` file. A terminal is a text window where you can type commands directly to your computer. Type the following command in Terminal on macOS or PowerShell on Windows to install for Codex. You then install the plugin with `/plugins` in the Codex chat box.
 
 ```bash
 codex plugin marketplace add Xuzhen-Li/literature-review-skills
 ```
 
-Cursor has no repository marketplace file. To clone means to download an exact copy of a folder from the internet to your computer. Type the following command in Terminal on macOS or PowerShell on Windows to clone for Cursor.
+This repository does not provide a Cursor marketplace file. To clone means to download an exact copy of a folder from the internet to your computer. Type the following command in Terminal on macOS or PowerShell on Windows to clone for Cursor.
 
 ```bash
-git clone https://github.com/Xuzhen-Li/literature-review-skills ~/.cursor/plugins/local/literature-review-skills
+git clone https://github.com/Xuzhen-Li/literature-review-skills $HOME/.cursor/plugins/local/literature-review-skills
 ```
 
 A symlink is a shortcut file that points to another folder on your computer. Symlinks under `plugins/local` that point elsewhere are skipped, so you must copy or clone directly there.
