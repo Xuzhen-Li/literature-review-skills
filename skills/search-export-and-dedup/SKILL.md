@@ -19,7 +19,7 @@ description: >
 - Locked strings and `01-search/hit_counts.tsv`.
 - A place to put exports: `<project>/02-records/raw/`.
 - `scripts/dedup.py` in this skill directory (follow the symlink to the real path). Tests live in `tests/test_dedup.py`.
-- `scripts/verify_ids.py`, tests in `tests/test_verify_ids.py`. [[TODO-TEXT: one input bullet saying what verify_ids.py needs (library.csv or evidence_table.csv) and the optional env vars LRS_CONTACT_EMAIL / NCBI_API_KEY]]
+- `scripts/verify_ids.py`, tests in `tests/test_verify_ids.py`. Reads `library.csv` or `evidence_table.csv` (a CSV table with `doi` or `pmid` columns). Optional environment variables: `LRS_CONTACT_EMAIL` (polite contact email for Crossref and NCBI queries) and `NCBI_API_KEY` (NCBI key enabling faster request rates); both are optional and never printed.
 - The user performs logins. Do not type a password or complete a publisher login.
 
 Browser help is allowed only as the user driving their own session. If no browser is available, give the user the export steps and wait for the files.
@@ -55,6 +55,14 @@ Repeat `--input` / `--source` once per file. Source labels should be stable (`pu
 6. Check the arithmetic: sum of `by_source.*.records_exported` equals `identified_total`; `identified_total` minus `duplicates_removed` equals `records_after_deduplication`. If not, stop. Do not hand-edit the JSON to make it balance.
 7. Show the user the per-source counts and the duplicate total. This skill has no lock. Do not start title/abstract screening here.
 
+8. Verify identifiers: After deduplication, open Terminal (macOS) or Command Prompt/Terminal (Windows) and navigate to the suite root (the folder that contains the `skills/` directory). Run:
+
+```bash
+python3 skills/search-export-and-dedup/scripts/verify_ids.py <project>/02-records/library.csv
+```
+
+This compares remote data against your table without modifying your input file. Open the resulting `identifier_check.csv` in a spreadsheet app. Any non-`ok` status is flagged `[VERIFY]` for you to manually correct in your library. Running with `--offline` skips network calls; format-valid identifiers are marked `unchecked` while badly formed ones are still marked `invalid`.
+
 Match rule used by the script: two records merge on normalized DOI; else on PMID when the DOIs do not conflict; else on normalized title+year when DOI and PMID do not conflict. Title matching lowercases text, turns punctuation into spaces, and requires a four-digit year. A title alone does not match. Details and examples are in `references/dedup_rules.md`.
 
 ## Human gate(s)
@@ -85,5 +93,3 @@ No lock. Checkpoint: the user confirms the exports are complete before you treat
 ## Next step
 
 `literature-screening`.
-
-[[TODO-TEXT: procedure step for running verify_ids.py after dedup (and again on evidence_table.csv before drafting), reading identifier_check.csv, and handling [VERIFY] rows by hand without auto-correcting; say --offline only checks format]]

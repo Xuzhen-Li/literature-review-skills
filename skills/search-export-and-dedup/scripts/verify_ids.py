@@ -395,12 +395,12 @@ def summarize(results: list[dict]) -> dict:
 
 
 def main(argv=None, client: PoliteClient | None = None) -> int:
-    ap = argparse.ArgumentParser(description="[[TODO-TEXT: one-line -h description of verify_ids.py]]")
-    ap.add_argument("table", type=Path, help="[[TODO-TEXT: help for input table]]")
+    ap = argparse.ArgumentParser(description="Verify DOIs via Crossref and PMIDs via NCBI esummary against row title, year, and author; write an identifier_check.csv report without altering the input table.")
+    ap.add_argument("table", type=Path, help="Path to input CSV (such as library.csv or evidence_table.csv) containing a doi or pmid column.")
     ap.add_argument("-o", "--out", type=Path, default=None,
-                    help="[[TODO-TEXT: help for --out; default evidence/identifier_check.csv next to input]]")
-    ap.add_argument("--offline", action="store_true", help="[[TODO-TEXT: help for --offline]]")
-    ap.add_argument("--strict", action="store_true", help="[[TODO-TEXT: help for --strict exit code]]")
+                    help="Path for output report CSV (default: identifier_check.csv in the same directory as input table).")
+    ap.add_argument("--offline", action="store_true", help="Run format checks only without network calls; format-valid identifiers are marked as unchecked with detail offline.")
+    ap.add_argument("--strict", action="store_true", help="Exit with status 1 if any row has status mismatch, not_found, or invalid; otherwise exit 0.")
     args = ap.parse_args(argv)
 
     rows = read_rows(args.table)
