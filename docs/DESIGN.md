@@ -133,3 +133,7 @@ description: <one paragraph: what it does + concrete trigger phrases + when NOT 
 Version 0.2.0 adds the narrative core, original figure files, required limitations and next-questions sections, a post-lock style refresh that polishing must follow, and the optional passes named in the skill table above.
 
 Version 0.3.0 adds the project cap for narrative reviews, logged crops of local PDFs, a homepage gate, exact gate sentences, a fixed introduction for each skill, and a DOI upload list when this computer cannot download a paper. Desktop control may open the user's own browser. It does not type a password or fetch a paywalled PDF.
+
+## SKILL.md frontmatter check
+
+Frontmatter is a hidden settings block at the top of a text file. The `scripts/check_skills.py` script validates portable `SKILL.md` frontmatter under a folder like `skills/` and requires it to start and end with `---` lines. The script requires a non empty `name` matching the parent folder, a `description` under 1024 characters, and a whole file count under 500 lines. A terminal is a text window where you can type commands directly to your computer. Type `python3 scripts/check_skills.py` in Terminal on macOS or PowerShell on Windows to run it on the default folder, which returns an exit code of 0 when clean or 1 when a problem is found.

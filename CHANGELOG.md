@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add `scripts/check_skills.py` and `tests/test_check_skills.py` for portable `SKILL.md` frontmatter checks.
+
 ## 0.3.0 - 2026-10-13
 
 - Narrative reviews keep the most relevant records up to `narrative_core_cap` in `project.yaml` (default 500). The agent does not change that number. Ties at the cutoff stay in the core and are logged. Other rows are `not_read` with reason `below-cap`. Systematic, scoping, and umbrella reviews still screen the full library.
