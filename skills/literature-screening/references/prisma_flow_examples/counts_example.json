@@ -12,15 +12,14 @@
   "excluded_reasons": {
     "Wrong study design": 48,
     "No relevant outcome": 39,
-    "Wrong population": 21,
-    "Duplicate report of same study": 6
+    "Wrong population": 21
   },
-  "studies_included": 35,
-  "reports_included": 38,
+  "studies_included": 41,
+  "reports_included": 44,
   "other": {
-    "websites": 9,
-    "organisations": 3,
-    "citation_searching": 22,
+    "websites": 4,
+    "organisations": 2,
+    "citation_searching": 12,
     "sought": 18,
     "not_retrieved": 2,
     "assessed": 16,

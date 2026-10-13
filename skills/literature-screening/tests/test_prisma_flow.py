@@ -38,8 +38,8 @@ def test_example_json_and_csv_load():
 def test_optional_keys_default_to_zero(raw):
     del raw["registers"], raw["automation_removed"], raw["other"]
     raw["databases"] += 36
-    raw["reports_included"] = 31
-    raw["studies_included"] = 28
+    raw["reports_included"] = 37
+    raw["studies_included"] = 34
     c = pf.normalize(raw)
     assert c["registers"] == 0 and c["automation_removed"] == 0
 
@@ -98,7 +98,7 @@ def test_other_arm_arithmetic(raw):
 
 
 def test_studies_exceed_reports(raw):
-    raw["studies_included"] = 39
+    raw["studies_included"] = 45
     assert any(e.startswith("studies_included") for e in errors_of(raw))
 
 
@@ -151,3 +151,35 @@ def test_check_mode_and_error_exit(tmp_path, capsys):
     assert pf.main([str(bad), "--out", str(tmp_path / "y")]) == 2
     assert "ERROR databases: negative count -3" in capsys.readouterr().err
     assert not (tmp_path / "y.svg").exists()
+
+
+def test_other_identified_must_equal_sought(raw):
+    raw["other"]["citation_searching"] += 1
+    msgs = errors_of(raw)
+    assert any(e.startswith("other.sought: expected") for e in msgs)
+
+
+def test_studies_equal_reports_allowed(raw):
+    raw["studies_included"] = raw["reports_included"]
+    assert pf.normalize(raw)["studies_included"] == 44
+
+
+def test_reason_lines_fit_on_one_line():
+    counts = pf.load_counts(EXAMPLES / "counts_example.json")
+    counts["excluded_reasons"]["A much longer exclusion reason label"] = 0
+    layout = pf.build_layout(counts)
+    excl = [b for b in layout["boxes"] if b.lines and b.lines[0][1] == "Reports excluded:"]
+    assert excl
+    for b in excl:
+        assert all("(n = " in t for _, t in b.lines[1:])
+
+
+def test_caption_and_label(tmp_path):
+    out = tmp_path / "flow"
+    assert pf.main([str(EXAMPLES / "counts_example.csv"), "--out", str(out),
+                    "--label", "Example data"]) == 0
+    svg = out.with_suffix(".svg").read_text()
+    assert "Adapted from the PRISMA 2020" in svg and "doi:10.1136/bmj.n71" in svg and "Example data" in svg
+    assert pf.main([str(EXAMPLES / "counts_example.csv"), "--out", str(out),
+                    "--no-caption"]) == 0
+    assert "Adapted from" not in out.with_suffix(".svg").read_text()

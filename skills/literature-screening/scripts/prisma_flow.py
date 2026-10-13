@@ -33,6 +33,9 @@ GAP_Y = 14.0
 PHASE_W = 14.0
 MARGIN = 3.0
 ARROW = 3.0
+CAPTION = ("Adapted from the PRISMA 2020 flow diagram (Page et al., BMJ 2021; "
+           "doi:10.1136/bmj.n71)")
+CAPTION_FILL = "#6B6B6B"
 
 # Arial advance widths per 1000 em, ASCII 32-126.
 ASCII_W = [
@@ -174,9 +177,8 @@ def validate(c: dict) -> None:
     o = c.get("other")
     if o:
         o_identified = o["websites"] + o["organisations"] + o["citation_searching"]
-        if o["sought"] > o_identified:
-            errors.append(
-                f"other.sought: {o['sought']} exceeds records identified {o_identified}")
+        eq("other.sought", o["sought"], o_identified,
+           "other.websites + other.organisations + other.citation_searching")
         eq("other.assessed", o["assessed"], o["sought"] - o["not_retrieved"],
            "other.sought - other.not_retrieved")
         o_excl = sum(o["excluded_reasons"].values())
@@ -303,19 +305,29 @@ class Box:
         self.y = 0.0
 
 
-def build_layout(c: dict) -> dict:
+def right_width(c: dict) -> float:
+    """Wide enough that every 'reason (n = x)' line fits on one line."""
+    reasons = dict(c["excluded_reasons"])
+    reasons.update({f"o:{k}": v for k, v in c.get("other", {}).get("excluded_reasons", {}).items()})
+    need = [text_width(f"{k[2:] if k.startswith('o:') else k} {n(v)}", BODY_PT) + 6.0 + 2 * PAD
+            for k, v in reasons.items()]
+    return float(max([BOX_W] + [int(w) + 1 for w in need]))
+
+
+def build_layout(c: dict, caption: Optional[str] = CAPTION, label: Optional[str] = None) -> dict:
     o = c.get("other")
+    rw = right_width(c)
     x_main = MARGIN + PHASE_W + GAP_X / 2
     x_right = x_main + BOX_W + GAP_X
-    x_omain = x_right + BOX_W + ARM_GAP
+    x_omain = x_right + rw + ARM_GAP
     x_oright = x_omain + BOX_W + GAP_X
-    width = (x_oright if o else x_right) + BOX_W + MARGIN
+    width = (x_oright if o else x_right) + rw + MARGIN
 
     head = [Box(x_main, [("Identification of studies via databases and registers", False)],
-                head=True, width=2 * BOX_W + GAP_X)]
+                head=True, width=BOX_W + GAP_X + rw)]
     if o:
         head.append(Box(x_omain, [("Identification of studies via other methods", False)],
-                        head=True, width=2 * BOX_W + GAP_X))
+                        head=True, width=BOX_W + GAP_X + rw))
 
     r = c["excluded_reasons"]
     rows: List[List[Box]] = []
@@ -323,7 +335,7 @@ def build_layout(c: dict) -> dict:
         Box(x_main, [("Records identified from:", False),
                      (f"Databases {n(c['databases'])}", True),
                      (f"Registers {n(c['registers'])}", True)]),
-        Box(x_right, [("Records removed before screening:", False),
+        Box(x_right, width=rw, items=[("Records removed before screening:", False),
                       (f"Duplicate records removed {n(c['duplicates_removed'])}", True),
                       ("Records marked as ineligible by automation tools "
                        f"{n(c['automation_removed'])}", True),
@@ -336,18 +348,18 @@ def build_layout(c: dict) -> dict:
                                  (f"Citation searching {n(o['citation_searching'])}", True)]))
     rows.append(row)
     rows.append([Box(x_main, [(f"Records screened {n(c['screened'])}", False)]),
-                 Box(x_right, [(f"Records excluded {n(c['screened_excluded'])}", False)])])
+                 Box(x_right, width=rw, items=[(f"Records excluded {n(c['screened_excluded'])}", False)])])
     row = [Box(x_main, [(f"Reports sought for retrieval {n(c['sought'])}", False)]),
-           Box(x_right, [(f"Reports not retrieved {n(c['not_retrieved'])}", False)])]
+           Box(x_right, width=rw, items=[(f"Reports not retrieved {n(c['not_retrieved'])}", False)])]
     if o:
         row += [Box(x_omain, [(f"Reports sought for retrieval {n(o['sought'])}", False)]),
-                Box(x_oright, [(f"Reports not retrieved {n(o['not_retrieved'])}", False)])]
+                Box(x_oright, width=rw, items=[(f"Reports not retrieved {n(o['not_retrieved'])}", False)])]
     rows.append(row)
 
     def excl_box(x: float, reasons: Dict[str, int]) -> Box:
         items = [("Reports excluded:", False)]
         items += [(f"{label} {n(v)}", True) for label, v in reasons.items()]
-        return Box(x, items)
+        return Box(x, items, width=rw)
 
     row = [Box(x_main, [(f"Reports assessed for eligibility {n(c['assessed'])}", False)]),
            excl_box(x_right, r)]
@@ -371,7 +383,13 @@ def build_layout(c: dict) -> dict:
             b.y = y
         row_y.append((y, rh))
         y += rh + GAP_Y
-    height = y - GAP_Y + MARGIN
+    y -= GAP_Y
+    captions = []
+    for text in [t for t in (label, caption) if t]:
+        for ind, line in wrap(text, BODY_PT, width - 2 * MARGIN):
+            y += BODY_PT * LEAD
+            captions.append((MARGIN + ind, y + BODY_PT * 0.3, line))
+    height = y + MARGIN + (BODY_PT * 0.3 if captions else 0)
 
     phases = [("Identification", row_y[0][0], row_y[0][0] + row_y[0][1]),
               ("Screening", row_y[1][0], row_y[3][0] + row_y[3][1]),
@@ -400,7 +418,7 @@ def build_layout(c: dict) -> dict:
 
     boxes = head + [b for row in rows for b in row]
     return {"width": width, "height": height, "boxes": boxes, "arrows": arrows,
-            "phases": phases}
+            "phases": phases, "captions": captions}
 
 
 # ---------- SVG ----------
@@ -443,6 +461,9 @@ def build_svg(layout: dict) -> str:
                    + f'" fill="none" stroke="{LINE}" stroke-width="{LINE_W}"/>')
         out.append('<polygon points="' + " ".join(f"{_f(x)},{_f(y)}" for x, y in head)
                    + f'" fill="{LINE}"/>')
+    for x, y, line in layout.get("captions", []):
+        out.append(f'<text x="{_f(x)}" y="{_f(y)}" font-size="{_f(BODY_PT)}" '
+                   f'fill="{CAPTION_FILL}">{escape(line)}</text>')
     out.append("</svg>")
     return "\n".join(out) + "\n"
 
@@ -584,6 +605,9 @@ def build_pdf(layout: dict, font: Optional[Path]) -> bytes:
         tri = f"{_f(head[0][0])} {_f(Y(head[0][1]))} m " + " ".join(
             f"{_f(x)} {_f(Y(y))} l" for x, y in head[1:])
         ops.append(f"{_rgb(LINE)} rg {tri} h f")
+    for x, y, line in layout.get("captions", []):
+        ops.append(f"BT /F1 {_f(BODY_PT)} Tf {_rgb(CAPTION_FILL)} rg {_f(x)} {_f(Y(y))} Td "
+                   f"{_pdf_str(line)} Tj ET")
     content = zlib.compress("\n".join(ops).encode("latin-1"))
 
     objs: List[bytes] = []
@@ -630,6 +654,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("counts", help="counts file (.json or .csv)")
     ap.add_argument("--out", required=True, help="output path stem; writes <stem>.svg and <stem>.pdf")
     ap.add_argument("--font", help="Arial TrueType file to embed in the PDF (default: search system paths)")
+    ap.add_argument("--label", help="label line above the caption, e.g. 'Example data'")
+    ap.add_argument("--no-caption", action="store_true", help="omit the PRISMA 2020 source caption")
     ap.add_argument("--check", action="store_true", help="validate only; write nothing")
     args = ap.parse_args(argv)
     try:
@@ -651,7 +677,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 2
     if font is None:
         print("WARNING Arial not found; PDF uses Helvetica, not embedded", file=sys.stderr)
-    layout = build_layout(counts)
+    try:
+        (args.label or "").encode("cp1252")
+    except UnicodeEncodeError:
+        print("ERROR --label: characters outside Windows-1252", file=sys.stderr)
+        return 2
+    layout = build_layout(counts, None if args.no_caption else CAPTION, args.label)
     stem = Path(args.out)
     stem.parent.mkdir(parents=True, exist_ok=True)
     svg_path, pdf_path = stem.with_suffix(".svg"), stem.with_suffix(".pdf")
