@@ -9,21 +9,21 @@ Usage: install.sh [options]
 Link or copy each skills/<name> directory that contains SKILL.md.
 
 Options:
-  --target <cursor|claude|codex|all>  Tool skill directory (default: all)
-  --mode <copy|link>                  Copy files or create symlinks (default: link)
-  --dry-run                           Print the plan and write nothing
-  --target agents                     [[TODO-TEXT]]
-  --project DIR                       [[TODO-TEXT]]
-  --uninstall                         [[TODO-TEXT]]
-  -h, --help                          Show this help
+  --target <cursor|claude|codex|agents|all>  Tool skill directory (default: all; all installs cursor, claude, agents)
+  --mode <copy|link>                         Copy files or create symlinks (default: link)
+  --project DIR                              Install into DIR/.claude/skills, etc. instead of $HOME; DIR must already exist
+  --uninstall                                Remove this repo symlinks and .lrs-installed copies (unmarked skipped); dangling */skills/<name>; works with --dry-run, --target, --project
+  --dry-run                                  Print the plan and write nothing
+  -h, --help                                 Show this help
 
-Copy mode also copies shared/ to <name>/shared in each destination skill.
+Copy mode replaces destination contents, copies shared/ to <name>/shared, and writes a .lrs-installed marker.
 Link mode reaches shared/ through the symlink target, requiring the repository root to remain available.
 
-Destinations are under $HOME:
+Destinations are under $HOME (or DIR if --project is set):
   cursor  ~/.cursor/skills/<name>
   claude  ~/.claude/skills/<name>
-  codex   [[TODO-TEXT]]
+  codex   ~/.agents/skills/<name>
+  agents  ~/.agents/skills/<name>
 
 Running the same link install again leaves correct symlinks unchanged.
 A copy install replaces the contents of each destination skill directory.
