@@ -147,3 +147,12 @@ def test_no_author_no_year_key(er, tmp_path):
     recs, _ = er.build_records(er.read_table(p))
     assert recs[0]["citation_key"] == "Anonnd"
     assert "author" not in er.to_csl(recs)[0]
+
+
+def test_quoted_multiline_abstract(er, tmp_path):
+    lib = tmp_path / "library.csv"
+    lib.write_text('record_id,title,year,authors,abstract\nR1,T,2020,"Doe, J","First line,\nsecond line."\nR2,U,2021,"Roe, K",x\n',
+                   encoding="utf-8")
+    rows = er.read_table(lib)
+    assert [r["record_id"] for r in rows] == ["R1", "R2"]
+    assert rows[0]["abstract"] == "First line,\nsecond line."

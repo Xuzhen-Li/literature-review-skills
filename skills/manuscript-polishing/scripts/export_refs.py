@@ -38,10 +38,12 @@ _BIB_SPECIAL = {
 
 
 def read_table(path: Path) -> list[dict]:
-    text = path.read_text(encoding="utf-8-sig")
-    dialect = "excel-tab" if path.suffix.lower() in (".tsv", ".tab") or ("\t" in text.split("\n", 1)[0]) else "excel"
-    reader = csv.DictReader(text.splitlines(), dialect=dialect)
-    return [{(k or "").strip().lower(): (v or "").strip() for k, v in r.items()} for r in reader]
+    with path.open(newline="", encoding="utf-8-sig") as fh:
+        first = fh.readline()
+        fh.seek(0)
+        dialect = "excel-tab" if path.suffix.lower() in (".tsv", ".tab") or "\t" in first else "excel"
+        reader = csv.DictReader(fh, dialect=dialect)
+        return [{(k or "").strip().lower(): (v or "").strip() for k, v in r.items()} for r in reader]
 
 
 def normalize_doi(value: str) -> str:
