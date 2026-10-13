@@ -19,6 +19,7 @@ description: >
 - Locked strings and `01-search/hit_counts.tsv`.
 - A place to put exports: `<project>/02-records/raw/`.
 - `scripts/dedup.py` in this skill directory (follow the symlink to the real path). Tests live in `tests/test_dedup.py`.
+- `scripts/verify_ids.py`, tests in `tests/test_verify_ids.py`. [[TODO-TEXT: one input bullet saying what verify_ids.py needs (library.csv or evidence_table.csv) and the optional env vars LRS_CONTACT_EMAIL / NCBI_API_KEY]]
 - The user performs logins. Do not type a password or complete a publisher login.
 
 Browser help is allowed only as the user driving their own session. If no browser is available, give the user the export steps and wait for the files.
@@ -84,3 +85,5 @@ No lock. Checkpoint: the user confirms the exports are complete before you treat
 ## Next step
 
 `literature-screening`.
+
+[[TODO-TEXT: procedure step for running verify_ids.py after dedup (and again on evidence_table.csv before drafting), reading identifier_check.csv, and handling [VERIFY] rows by hand without auto-correcting; say --offline only checks format]]
