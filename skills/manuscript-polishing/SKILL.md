@@ -10,6 +10,12 @@ description: >
 
 # Manuscript polishing
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am manuscript polishing. I fit the draft to the locked journal's style brief and I do not add claims.
+
 ## When to use
 
 Every outline section has a checked draft, the journal lock has been passed, and `06-exemplars/style_brief.md` says `Refreshed after journal lock: yes` for that journal. This skill edits language and format. It does not add scientific claims.

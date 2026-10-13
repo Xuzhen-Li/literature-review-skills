@@ -10,6 +10,12 @@ description: >
 
 # Review outline builder
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am the review outline builder. I assign each section a claim, evidence ids, and a word budget, including limitations and next questions.
+
 ## When to use
 
 The evidence table already has the papers that may be cited, and the topic lock has been passed. This skill turns those rows into a section map. It stops before any manuscript sentence is written.
@@ -75,7 +81,7 @@ Fix every `ERROR` line until the command prints `OK outline`.
 
 ## Human gate(s)
 
-Outline lock. If the user refuses, append `outline lock refused | human` and stop. Do not start `review-section-drafter`. Changing a locked outline later requires the user to clear that lock in `LOG.md` first. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only a direct yes sets the lock.
+Outline lock. If the user refuses, append `outline lock refused | human` and stop. Do not start `review-section-drafter`. Changing a locked outline later requires the user to clear that lock in `LOG.md` first. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only the exact sentence `I confirm the outline lock` sets the lock.
 
 ## Outputs (exact paths + formats)
 
