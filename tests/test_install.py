@@ -63,7 +63,7 @@ TARGET_DIRS = {
     "codex": [".agents/skills"],
     "cursor": [".cursor/skills"],
     "agents": [".agents/skills"],
-    "all": [".claude/skills", ".agents/skills"],
+    "all": [".cursor/skills", ".claude/skills", ".agents/skills"],
 }
 ALL_DIRS = [".claude/skills", ".agents/skills", ".cursor/skills", ".codex/skills"]
 
@@ -178,3 +178,37 @@ def test_project_dir_must_exist(tmp_path):
 def test_unknown_target_rejected(tmp_path):
     r = run_raw(tmp_path, "--target", "nope", check=False)
     assert r.returncode == 2
+
+
+@pytest.mark.parametrize("args", [[], ["--target", "all"]])
+def test_all_target_exact_set(tmp_path, args):
+    run_raw(tmp_path, *args, "--mode", "copy")
+    assert sorted(p.name for p in tmp_path.iterdir()) == [".agents", ".claude", ".cursor"]
+    for d in (".agents", ".claude", ".cursor"):
+        assert sorted(p.name for p in (tmp_path / d / "skills").iterdir()) == SKILL_NAMES
+
+
+def test_uninstall_removes_dangling_links_from_deleted_clone(tmp_path):
+    root = tmp_path / ".agents" / "skills"
+    root.mkdir(parents=True)
+    gone = tmp_path / "old-clone" / "skills"
+    for name in SKILL_NAMES:
+        (root / name).symlink_to(gone / name)
+    run_raw(tmp_path, "--target", "agents", "--uninstall")
+    assert not any(root.iterdir())
+
+
+def test_uninstall_keeps_dangling_link_with_other_target(tmp_path):
+    root = tmp_path / ".agents" / "skills"
+    root.mkdir(parents=True)
+    name = SKILL_NAMES[0]
+    keep = [
+        (name, tmp_path / "gone" / "skills" / "other-name"),
+        (SKILL_NAMES[1], tmp_path / "gone" / "elsewhere" / SKILL_NAMES[1]),
+    ]
+    for link, target in keep:
+        (root / link).symlink_to(target)
+    out = run_raw(tmp_path, "--target", "agents", "--uninstall").stdout
+    assert "skip" in out
+    for link, _ in keep:
+        assert (root / link).is_symlink()

@@ -146,7 +146,7 @@ dest_root_for() {
 
 tools=()
 if [[ "$TARGET" == "all" ]]; then
-  tools=(claude agents)
+  tools=(cursor claude agents)
 else
   tools=("$TARGET")
 fi
@@ -194,9 +194,12 @@ if [[ "$UNINSTALL" -eq 1 ]]; then
       name="$(basename "$src")"
       dest="${root}/${name}"
       if [[ -L "$dest" ]]; then
-        if [[ "$(readlink "$dest")" != "$src" ]]; then
-          echo "skip  ${dest}  (symlink not created by this repo)"
-          continue
+        link_target="$(readlink "$dest")"
+        if [[ "$link_target" != "$src" ]]; then
+          if [[ -e "$dest" || "$link_target" != */skills/"$name" ]]; then
+            echo "skip  ${dest}  (symlink not created by this repo)"
+            continue
+          fi
         fi
         actions=$((actions + 1))
         if [[ "$DRY_RUN" -eq 1 ]]; then
