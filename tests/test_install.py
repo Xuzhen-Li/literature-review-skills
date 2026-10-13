@@ -101,6 +101,21 @@ def assert_uninstalled(base, target):
         assert not root.exists() or not any(root.iterdir()), rel
 
 
+def assert_shared_resolves(base, target, mode):
+    files = sorted(p.name for p in (ROOT / "shared").iterdir() if p.is_file())
+    for rel in TARGET_DIRS[target]:
+        for name in SKILL_NAMES:
+            skill = base / rel / name
+            # Copy: <skill>/shared. Link: suite root two levels above resolved SKILL.md.
+            if mode == "copy":
+                shared = skill / "shared"
+                assert sorted(p.name for p in shared.iterdir() if p.is_file()) == files
+            else:
+                shared = (skill / "SKILL.md").resolve().parents[2] / "shared"
+            for ref in shared_refs(skill):
+                assert (shared / ref).is_file(), (rel, name, ref)
+
+
 @pytest.mark.parametrize("scope", ["user", "project"])
 @pytest.mark.parametrize("mode", ["copy", "link"])
 @pytest.mark.parametrize("target", sorted(TARGET_DIRS))
@@ -117,6 +132,7 @@ def test_target_mode_install_uninstall(tmp_path, target, mode, scope):
     run_raw(home, *args)
     run_raw(home, *args)  # idempotent
     assert_installed(base, target, mode)
+    assert_shared_resolves(base, target, mode)
     if scope == "project":
         assert not any(home.iterdir())
     dry = run_raw(home, *args, "--uninstall", "--dry-run").stdout
@@ -124,6 +140,9 @@ def test_target_mode_install_uninstall(tmp_path, target, mode, scope):
     assert_installed(base, target, mode)
     run_raw(home, *args, "--uninstall")
     assert_uninstalled(base, target)
+    assert (ROOT / "shared" / "gates.md").is_file()
+    for rel in TARGET_DIRS[target]:
+        assert not list((base / rel).rglob("shared")), rel
     run_raw(home, *args, "--uninstall")  # second uninstall is a no-op
 
 
