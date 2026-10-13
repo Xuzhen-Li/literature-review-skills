@@ -125,3 +125,7 @@ description: <one paragraph: what it does + concrete trigger phrases + when NOT 
 - `.github/` added later by the repo-decoration bot.
 
 Version 0.2.0 adds the narrative core, original figure files, required limitations and next-questions sections, a post-lock style refresh that polishing must follow, and the optional passes named in the skill table above. It does not add published-figure crops, a fixed screening cap, matcher websites, unattended desktop control, or a second project tree.
+
+## SKILL.md frontmatter check
+
+[[TODO-TEXT]]
