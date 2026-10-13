@@ -1,6 +1,6 @@
 # AGENTS.md
 
-[[TODO-TEXT:agents-intro]]
+AGENTS.md is a guidance file for Codex and other agents. This repository provides 17 literature-review skills (stage instruction packs), `shared/` rules, and `install.sh`. To install skills into `~/.cursor/skills`, `~/.claude/skills`, or `~/.codex/skills`, run `install.sh` with `--target` set to `cursor`, `claude`, `codex`, or `all` (default `all`). This file helps humans and agents locate skill paths, gates (checkpoints), and tests.
 
 ## Repository layout
 
@@ -14,7 +14,7 @@
 
 ## Skills
 
-[[TODO-TEXT:agents-skills-intro]]
+Below are the 17 skills provided by this repository:
 
 | Skill | Path |
 |---|---|
@@ -38,11 +38,11 @@
 
 ## Workflow
 
-[[TODO-TEXT:agents-workflow]]
+Start each session from `review-orchestrator` (`skills/review-orchestrator/SKILL.md`) to decide what step comes next. Route to exactly one next skill per turn. Do not start a second skill in the same turn. Inspect `project.yaml` and `LOG.md` to check stage gates (`topic_lock`, `search_lock`, `inclusion_lock`, `outline_lock`, `journal_lock`, `final_submit`). An earlier unpassed gate always beats a later file that already exists.
 
 ## Human gates
 
-[[TODO-TEXT:agents-gates]]
+Gates are human checkpoints defined in `shared/gates.md`. A gate passes only when its key in `project.yaml` equals the YAML boolean `true`. Values like `false`, `"true"`, `yes`, or missing keys do not pass. The agent may record progress but must never confirm a gate for the user. Every confirmation entry in `LOG.md` must end with `| human`.
 
 ## Tests
 
@@ -50,8 +50,8 @@
 python -m pytest -q
 ```
 
-[[TODO-TEXT:agents-tests]]
+Open a terminal at the repository root and run pytest (the Python test runner) using the command above. CI runs the tests on several combinations of Python and pandas versions. Some skill tests require pandas.
 
 ## Editing skills
 
-[[TODO-TEXT:agents-editing-rules]]
+Keep `SKILL.md` frontmatter limited strictly to `name` and `description`. The `name` must match the skill directory name (using lowercase, digits, and hyphens). Keep each `SKILL.md` under 500 lines; place long templates inside `references/` (such as `skills/<name>/references/`). When a skill includes `skills/<name>/scripts/`, place matching tests under `skills/<name>/tests/`.
