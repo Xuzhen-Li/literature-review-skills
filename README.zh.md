@@ -12,6 +12,7 @@
 - 6个人工节点：主题、检索式、纳入标准、大纲、期刊和最终提交。用户通过节点，agent 会将其记录下来。
 - 建立证据表。草稿中的句子会映射到证据 ID，否则保留 `[NEEDS SOURCE]` 标记。
 - 经过测试的去重器（依次检查 `DOI`、`PMID` 以及标准化的标题和年份），从 RIS、PubMed NBIB 和 CSV 导出文件中记录 PRISMA 识别数量统计。
+- 标识符验证器（`skills/search-export-and-dedup/scripts/verify_ids.py`）：通过 Crossref（DOI 注册机构）解析 `DOI`（通常以 10. 开头、用于命名论文的数字对象标识符），并通过 NCBI（美国国家生物技术信息中心）解析 `PMID`（PubMed 论文数字编号），将存疑项标记为 `[VERIFY]` 并输出至独立的 `identifier_check.csv`，且不会修改输入文件。
 - 默认生成原创图表，绘制为可编辑的 SVG 以及 PDF 文件。重复使用或改编的图表会被登记以申请权限，而非直接复制或裁剪。
 - 叙述性综述可以保留用户确认的核心文献，并将其余文献记录为未阅读。系统性、范围和伞形综述仍会筛选每一条去重后的记录。
 - 综述大纲将局限性和下一步研究问题作为独立的章节。锁定期刊后，会更新样式简报，润色步骤将遵循该期刊的标题模式、摘要形状和图表预算。
@@ -154,16 +155,16 @@ MIT. Copyright (c) 2026 Xuzhen Li. See [LICENSE](LICENSE).
 /plugin install literature-review-skills@literature-review-skills
 ```
 
-支持 Agent Plugins 标准的宿主使用根目录的 `plugin.json` 打包格式。Codex 读取 `.agents/plugins/marketplace.json` 文件。终端是一个文本窗口，您可以在其中直接向您的计算机输入命令。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Codex 进行安装。
+支持 Agent Plugins 标准的宿主使用根目录的 `plugin.json` 打包格式。Codex 读取 `.agents/plugins/marketplace.json` 文件。终端是一个文本窗口，您可以在其中直接向您的计算机输入命令。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Codex 进行安装。然后在 Codex 聊天框中使用 `/plugins` 安装插件。
 
 ```bash
 codex plugin marketplace add Xuzhen-Li/literature-review-skills
 ```
 
-Cursor 没有代码库市场文件。克隆意味着将文件夹的精确副本从互联网下载到您的计算机上。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Cursor 进行克隆。
+此代码库不提供 Cursor 市场文件。克隆意味着将文件夹的精确副本从互联网下载到您的计算机上。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Cursor 进行克隆。
 
 ```bash
-git clone https://github.com/Xuzhen-Li/literature-review-skills ~/.cursor/plugins/local/literature-review-skills
+git clone https://github.com/Xuzhen-Li/literature-review-skills $HOME/.cursor/plugins/local/literature-review-skills
 ```
 
 符号链接是指向计算机上另一个文件夹的快捷方式文件。指向其他地方的 `plugins/local` 下的符号链接会被跳过，因此您必须直接将文件复制或克隆到那里。

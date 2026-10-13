@@ -12,6 +12,7 @@ This suite is for researchers writing a narrative, systematic, scoping, or umbre
 - Six human gates: topic, search strings, inclusion criteria, outline, journal, and final submit. The user passes a gate. The agent records it.
 - An evidence table. Draft sentences map to evidence ids or stay marked `[NEEDS SOURCE]`.
 - A tested deduplicator (`DOI`, then `PMID`, then normalized title and year) that writes PRISMA identification counts from RIS, PubMed NBIB, and CSV exports.
+- An identifier checker (`skills/search-export-and-dedup/scripts/verify_ids.py`) that resolves DOIs (Digital Object Identifier strings usually starting with 10. that name papers) via Crossref (a DOI registration agency) and PMIDs (PubMed numeric ids) via NCBI (the US National Center for Biotechnology Information), writing flagged results (`[VERIFY]`) to `identifier_check.csv` without modifying the input file.
 - Original figures by default, drawn as an editable SVG plus a PDF. Reused or adapted items are logged for permission instead of being copied or cropped.
 - A narrative review can keep a user-confirmed core and log the rest as not read. Systematic, scoping, and umbrella reviews still screen every deduplicated record.
 - Outlines keep limitations and next questions as separate sections. After journal lock, the style brief is refreshed and polishing follows its heading pattern, abstract shape, and figure budget.
@@ -154,16 +155,16 @@ A plugin is an add on that gives a program new abilities. A marketplace file is 
 /plugin install literature-review-skills@literature-review-skills
 ```
 
-Hosts that support the Agent Plugins standard use the root `plugin.json` packaging. Codex reads the `.agents/plugins/marketplace.json` file. A terminal is a text window where you can type commands directly to your computer. Type the following command in Terminal on macOS or PowerShell on Windows to install for Codex.
+Hosts that support the Agent Plugins standard use the root `plugin.json` packaging. Codex reads the `.agents/plugins/marketplace.json` file. A terminal is a text window where you can type commands directly to your computer. Type the following command in Terminal on macOS or PowerShell on Windows to install for Codex. You then install the plugin with `/plugins` in the Codex chat box.
 
 ```bash
 codex plugin marketplace add Xuzhen-Li/literature-review-skills
 ```
 
-Cursor has no repository marketplace file. To clone means to download an exact copy of a folder from the internet to your computer. Type the following command in Terminal on macOS or PowerShell on Windows to clone for Cursor.
+This repository does not provide a Cursor marketplace file. To clone means to download an exact copy of a folder from the internet to your computer. Type the following command in Terminal on macOS or PowerShell on Windows to clone for Cursor.
 
 ```bash
-git clone https://github.com/Xuzhen-Li/literature-review-skills ~/.cursor/plugins/local/literature-review-skills
+git clone https://github.com/Xuzhen-Li/literature-review-skills $HOME/.cursor/plugins/local/literature-review-skills
 ```
 
 A symlink is a shortcut file that points to another folder on your computer. Symlinks under `plugins/local` that point elsewhere are skipped, so you must copy or clone directly there.
