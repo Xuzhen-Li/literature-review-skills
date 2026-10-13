@@ -65,7 +65,7 @@ Import `asreview_input.csv` (a CSV/TSV spreadsheet file) into an ASReview LAB br
 python3 skills/literature-screening/scripts/asreview_io.py import <asreview_export.csv> -o <project>/03-screening/asreview_decisions.csv
 ```
 
-Manually add a `reason_code` for excludes, set `consensus`, and copy the rows into `screening.csv`.
+Manually add a `reason_code` for excludes, set `consensus`, and copy the rows into `screening.csv`. [[TODO-TEXT]]
 
 6. Full text: for every record with title/abstract `consensus` of `include` or `maybe`, add `stage` `full_text`. Retrieval failure is not an eligibility exclusion. Those records are "reports not retrieved" in the flow, with `reason_code` `FT_NOT_RETRIEVED`, and they do not go in the excluded-by-reason list.
 7. Build `03-screening/included.tsv` for records whose full-text `consensus` is `include`. Header: `record_id,doi,pmid,title,year,first_author,n_authors,venue,citation_key`. Copy identifiers from `library.csv`. Put the `journal` value in `venue`. `citation_key` is the first author's family name (ASCII letters) plus the four-digit year (`Lovelace2020`). Collisions get a trailing `a`, `b`, or `c`. `n_authors` is the count of authors joined by `; ` (semicolon then space), or empty if the author field is empty. RIS and NBIB rows already use that separator. If a CSV cell uses another separator, rewrite that cell to `; ` before counting. Do not invent a missing author.

@@ -170,7 +170,7 @@ I confirm the topic lock
 
 ### skill 和插件有什么区别？我该用哪一种？
 
-17 个 skill 是一样的，但插件路线会把整个仓库（包括 `.cursor/rules`、`scripts`、`platform`、`plugin.json`）放进 `~/.cursor/plugins/local/`，而 Cursor 是否从插件路线中读取 `skills/` 【待核实】。推荐用 skill（装到 `~/.cursor/skills`）。本地插件是备用的路线 B。
+17 个 skill 是一样的，但插件路线会把整个仓库（包括 `.cursor/rules`、`scripts`、`platform`、`plugin.json`）放进 `~/.cursor/plugins/local/`，而 Cursor 是否从插件路线中读取 `skills/` 【待核实】。[[TODO-TEXT]]推荐用 skill（装到 `~/.cursor/skills`）。本地插件是备用的路线 B。
 
 ### 我没有编程经验，必须用终端吗？
 

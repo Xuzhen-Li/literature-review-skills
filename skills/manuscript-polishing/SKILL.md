@@ -111,7 +111,7 @@ only after the user has read the change log.
 python3 skills/manuscript-polishing/scripts/export_refs.py <project>/03-screening/included.tsv --library <project>/02-records/library.csv
 ```
 
-Check the terminal output. Any citation key (a short text ID for a paper) listed in the authors_incomplete group will either end with "and others" in its BibTeX entry or have no author at all, and both situations need finishing by hand. Next, download the locked journal's CSL (Citation Style Language) file from https://github.com/citation-style-language/styles and use its saved file path for the --csl flag in the pandoc command below. You can then use Pandoc (a document converter) to format the citations. If you do not have Pandoc installed, you must first install it from https://pandoc.org/installing.html. Build the polished document by typing:
+Check the terminal output. Any citation key (a short text ID for a paper) listed in the authors_incomplete group will either end with "and others" in its BibTeX entry or have no author at all, and both situations need finishing by hand. Next, download the locked journal's CSL (Citation Style Language) file from https://github.com/citation-style-language/styles and use its saved file path for the --csl flag in the pandoc command below. [[TODO-TEXT]] You can then use Pandoc (a document converter) to format the citations. If you do not have Pandoc installed, you must first install it from https://pandoc.org/installing.html. Build the polished document by typing:
 ```bash
 pandoc "<project>/10-polish/manuscript.md" \
   --from=markdown \

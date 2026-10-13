@@ -15,6 +15,8 @@
 - `skills/literature-screening/scripts/prisma_flow.py` draws a PRISMA 2020 flow diagram as SVG and PDF from a JSON or CSV counts file. It validates arithmetic and non-negative integers, supports an optional other-methods arm, includes example inputs under `references/prisma_flow_examples/`, and adds pytest coverage in `skills/literature-screening/tests/test_prisma_flow.py`.
 - Added `asreview_io.py` script to export library records for ASReview LAB and import screening decisions back.
 - Added `snowball.py` script to fetch backward and forward citations via OpenAlex with automatic retry and partial result saving.
+- `plugin.json` and `.claude-plugin/plugin.json` version set to 0.3.0 to match this changelog.
+- [[TODO-TEXT]]
 
 ## 0.3.0 - 2026-10-13
 
