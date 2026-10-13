@@ -132,3 +132,5 @@ No separate project-level gate. The user accepts the change log before the docx 
 ## Next step
 
 `figure-permissions` if any ledger row is still `adapted` or `reused` and not `granted`. Otherwise `submission-package`.
+
+[[TODO-TEXT: procedure step for exporting refs.bib and refs.json with scripts/export_refs.py from 03-screening/included.tsv (plus --library 02-records/library.csv for full author lists), then using the locked journal's CSL style from the official CSL style repository with Pandoc --citeproc; note that rows reported as authors_incomplete get "and others" in BibTeX and must be completed by hand]]
