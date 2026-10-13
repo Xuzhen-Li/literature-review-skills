@@ -33,7 +33,7 @@ class CheckSkillsTest(unittest.TestCase):
                  "license: MIT\ncompatibility: python3\nmetadata:\n  version: \"1\"\nallowed-tools: Read\n")
         self.assertEqual(cs.check_skill(p), [])
         fields, _ = cs.parse_frontmatter(p.read_text())
-        self.assertEqual(fields["description"], "Does a thing. Second line.")
+        self.assertEqual(fields["description"].strip(), "Does a thing. Second line.")
 
     def test_name_folder_mismatch(self):
         p = make(self.tmp, "folder-a", "name: folder-b\ndescription: x\n")
@@ -52,12 +52,67 @@ class CheckSkillsTest(unittest.TestCase):
         self.assertTrue(any("'name' is required" in e for e in cs.check_skill(p)))
 
     def test_description_too_long(self):
-        p = make(self.tmp, "a", "name: a\ndescription: " + "x" * 1537 + "\n")
-        self.assertTrue(any("max 1536" in e for e in cs.check_skill(p)))
+        p = make(self.tmp, "a", "name: a\ndescription: " + "x" * 1025 + "\n")
+        self.assertTrue(any("max 1024" in e for e in cs.check_skill(p)))
 
     def test_description_at_limit(self):
-        p = make(self.tmp, "a", "name: a\ndescription: " + "x" * 1536 + "\n")
+        p = make(self.tmp, "a", "name: a\ndescription: " + "x" * 1024 + "\n")
         self.assertEqual(cs.check_skill(p), [])
+
+    def test_description_empty(self):
+        p = make(self.tmp, "a", "name: a\ndescription: ''\n")
+        self.assertTrue(any("must not be empty" in e for e in cs.check_skill(p)))
+
+    def test_name_at_limit(self):
+        n = "a" * 64
+        p = make(self.tmp, n, f"name: {n}\ndescription: x\n")
+        self.assertEqual(cs.check_skill(p), [])
+
+    def test_name_too_long(self):
+        n = "a" * 65
+        p = make(self.tmp, n, f"name: {n}\ndescription: x\n")
+        self.assertTrue(any("max 64" in e for e in cs.check_skill(p)))
+
+    def test_name_hyphen_rules(self):
+        for n in ("-a", "a-", "a--b"):
+            p = make(self.tmp, n, f"name: {n}\ndescription: x\n")
+            self.assertTrue(any("single hyphens" in e for e in cs.check_skill(p)), n)
+
+    def test_compatibility_at_limit(self):
+        p = make(self.tmp, "a", "name: a\ndescription: x\ncompatibility: " + "c" * 500 + "\n")
+        self.assertEqual(cs.check_skill(p), [])
+
+    def test_compatibility_too_long(self):
+        p = make(self.tmp, "a", "name: a\ndescription: x\ncompatibility: " + "c" * 501 + "\n")
+        self.assertTrue(any("max 500" in e for e in cs.check_skill(p)))
+
+    def test_metadata_non_string_value(self):
+        p = make(self.tmp, "a", "name: a\ndescription: x\nmetadata:\n  version: 1.0\n")
+        self.assertTrue(any("'metadata'" in e for e in cs.check_skill(p)))
+
+    def test_metadata_not_mapping(self):
+        p = make(self.tmp, "a", "name: a\ndescription: x\nmetadata: [a, b]\n")
+        self.assertTrue(any("'metadata'" in e for e in cs.check_skill(p)))
+
+    def test_invalid_yaml_nested_colon(self):
+        p = make(self.tmp, "a", "name: a\ndescription: x: y\n")
+        self.assertTrue(any("invalid YAML" in e for e in cs.check_skill(p)))
+
+    def test_invalid_yaml_unclosed(self):
+        p = make(self.tmp, "a", "name: a\ndescription: [unclosed\n")
+        self.assertTrue(any("invalid YAML" in e for e in cs.check_skill(p)))
+
+    def test_invalid_yaml_tab_indent(self):
+        p = make(self.tmp, "a", "name: a\nmetadata:\n\tk: v\ndescription: x\n")
+        self.assertTrue(any("invalid YAML" in e for e in cs.check_skill(p)))
+
+    def test_duplicate_key(self):
+        p = make(self.tmp, "a", "name: a\nname: a\ndescription: x\n")
+        self.assertTrue(any("duplicate key 'name'" in e for e in cs.check_skill(p)))
+
+    def test_frontmatter_not_mapping(self):
+        p = make(self.tmp, "a", "- a\n- b\n")
+        self.assertTrue(any("must be a mapping" in e for e in cs.check_skill(p)))
 
     def test_non_portable_field(self):
         p = make(self.tmp, "a", "name: a\ndescription: x\nwhen_to_use: y\n")

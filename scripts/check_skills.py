@@ -1,15 +1,37 @@
 #!/usr/bin/env python3
-"""Check SKILL.md frontmatter against the portable Agent Skills fields."""
+"""Check SKILL.md frontmatter against the Agent Skills specification."""
 import re
 import sys
 from pathlib import Path
 
+import yaml
+
 ALLOWED = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
 REQUIRED = ("name", "description")
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-MAX_DESCRIPTION = 1536
+MAX_NAME = 64
+MAX_DESCRIPTION = 1024
+MAX_COMPATIBILITY = 500
 MAX_LINES = 500
-KEY_RE = re.compile(r"^([A-Za-z0-9_-]+):(.*)$")
+
+
+class UniqueKeyLoader(yaml.SafeLoader):
+    pass
+
+
+def _construct_mapping(loader, node, deep=False):
+    seen = set()
+    for key_node, _ in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in seen:
+            raise yaml.constructor.ConstructorError(
+                None, None, f"duplicate key '{key}'", key_node.start_mark)
+        seen.add(key)
+    return loader.construct_mapping(node, deep=deep)
+
+
+UniqueKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping)
 
 
 def parse_frontmatter(text):
@@ -20,42 +42,27 @@ def parse_frontmatter(text):
         end = next(i for i in range(1, len(lines)) if lines[i].strip() == "---")
     except StopIteration:
         raise ValueError("missing frontmatter end '---'")
-    fields, key, block, buf = {}, None, None, []
-
-    def flush():
-        if key is None:
-            return
-        if block is None:
-            fields[key] = "\n".join(buf).strip()
-        elif block.startswith(">"):
-            fields[key] = " ".join(s.strip() for s in buf if s.strip())
-        else:
-            fields[key] = "\n".join(s.strip() for s in buf).strip()
-
-    for raw in lines[1:end]:
-        if not raw.strip() or raw.lstrip().startswith("#") and not raw[:1].isspace():
-            if key is not None:
-                buf.append("")
-            continue
-        m = KEY_RE.match(raw)
-        if m and not raw[:1].isspace():
-            flush()
-            key, value = m.group(1), m.group(2).strip()
-            if key in fields:
-                raise ValueError(f"duplicate key '{key}'")
-            block = value if value[:1] in (">", "|") else None
-            buf = [] if block is not None or not value else [_unquote(value)]
-        elif raw[:1].isspace() and key is not None:
-            buf.append(raw)
-        else:
-            raise ValueError(f"unparseable frontmatter line: {raw!r}")
-    flush()
-    return fields, end
+    try:
+        data = yaml.load("\n".join(lines[1:end]), Loader=UniqueKeyLoader)
+    except yaml.YAMLError as exc:
+        raise ValueError(f"invalid YAML: {' '.join(str(exc).split())}")
+    if not isinstance(data, dict):
+        raise ValueError("frontmatter must be a mapping")
+    return data, end
 
 
-def _unquote(value):
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
-        return value[1:-1]
+def _str_field(fields, key, limit, path, errors):
+    if key not in fields:
+        return None
+    value = fields[key]
+    if not isinstance(value, str):
+        errors.append(f"{path}: '{key}' must be a string")
+        return None
+    value = value.strip()
+    if not value:
+        errors.append(f"{path}: '{key}' must not be empty")
+    elif limit and len(value) > limit:
+        errors.append(f"{path}: '{key}' is {len(value)} chars (max {limit})")
     return value
 
 
@@ -67,20 +74,26 @@ def check_skill(skill_md):
         fields, _ = parse_frontmatter(text)
     except ValueError as exc:
         return [f"{path}: {exc}"]
-    for key in sorted(set(fields) - ALLOWED):
+    for key in sorted(set(map(str, fields)) - ALLOWED):
         errors.append(f"{path}: field '{key}' is not a portable field")
     for key in REQUIRED:
-        if not fields.get(key):
+        if key not in fields:
             errors.append(f"{path}: '{key}' is required")
-    name = fields.get("name", "")
+    name = _str_field(fields, "name", MAX_NAME, path, errors)
     if name:
         if not NAME_RE.match(name):
-            errors.append(f"{path}: name '{name}' must use lowercase letters, digits and hyphens")
+            errors.append(f"{path}: name '{name}' must use lowercase letters, digits and single hyphens")
         if name != path.parent.name:
             errors.append(f"{path}: name '{name}' does not match folder '{path.parent.name}'")
-    desc = fields.get("description", "")
-    if len(desc) > MAX_DESCRIPTION:
-        errors.append(f"{path}: description is {len(desc)} chars (max {MAX_DESCRIPTION})")
+    _str_field(fields, "description", MAX_DESCRIPTION, path, errors)
+    _str_field(fields, "compatibility", MAX_COMPATIBILITY, path, errors)
+    _str_field(fields, "license", None, path, errors)
+    _str_field(fields, "allowed-tools", None, path, errors)
+    if "metadata" in fields:
+        meta = fields["metadata"]
+        if not isinstance(meta, dict) or not all(
+                isinstance(k, str) and isinstance(v, str) for k, v in meta.items()):
+            errors.append(f"{path}: 'metadata' must map string keys to string values")
     n_lines = len(text.splitlines())
     if n_lines >= MAX_LINES:
         errors.append(f"{path}: {n_lines} lines (must be under {MAX_LINES})")
