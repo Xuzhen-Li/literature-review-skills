@@ -127,16 +127,16 @@ def _write(path: Path, columns: list[str], rows: list[dict]) -> None:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="[[TODO-TEXT: one-line -h description of asreview_io.py]]")
+    ap = argparse.ArgumentParser(description="Prepare files for ASReview LAB or read your screening decisions back into the suite.")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    ex = sub.add_parser("export", help="[[TODO-TEXT: help for export]]")
-    ex.add_argument("library", type=Path, help="[[TODO-TEXT: help for library.csv]]")
-    ex.add_argument("-o", "--out", type=Path, required=True, help="[[TODO-TEXT: help for export --out]]")
-    ex.add_argument("--screening", type=Path, help="[[TODO-TEXT: help for --screening prior labels]]")
-    im = sub.add_parser("import", help="[[TODO-TEXT: help for import]]")
-    im.add_argument("asreview_export", type=Path, help="[[TODO-TEXT: help for ASReview export file]]")
-    im.add_argument("-o", "--out", type=Path, required=True, help="[[TODO-TEXT: help for import --out staging file]]")
-    im.add_argument("--screener", help="[[TODO-TEXT: help for --screener]]")
+    ex = sub.add_parser("export", help="Export your library records into a format ready for ASReview LAB.")
+    ex.add_argument("library", type=Path, help="The CSV library file to export.")
+    ex.add_argument("-o", "--out", type=Path, required=True, help="The path to save the ASReview input CSV file.")
+    ex.add_argument("--screening", type=Path, help="Optional path to screening.csv to include your existing prior labels.")
+    im = sub.add_parser("import", help="Convert a finished ASReview LAB export file into our screening format.")
+    im.add_argument("asreview_export", type=Path, help="The exported CSV or TSV file you downloaded from ASReview LAB.")
+    im.add_argument("-o", "--out", type=Path, required=True, help="The path to save the converted staging CSV file.")
+    im.add_argument("--screener", help="The name of the screener to write into the output file, defaults to the ASReview username.")
     args = ap.parse_args(argv)
 
     if args.cmd == "export":

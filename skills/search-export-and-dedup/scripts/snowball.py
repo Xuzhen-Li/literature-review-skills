@@ -190,13 +190,13 @@ def read_seeds(path: Path) -> list[str]:
 
 
 def main(argv=None, client: Client | None = None) -> int:
-    ap = argparse.ArgumentParser(description="[[TODO-TEXT: one-line -h description of snowball.py]]")
-    ap.add_argument("seeds", type=Path, help="[[TODO-TEXT: help for seeds file (included.tsv/CSV with doi column, or one DOI per line)]]")
-    ap.add_argument("-o", "--out", type=Path, required=True, help="[[TODO-TEXT: help for --out candidates CSV]]")
-    ap.add_argument("--report", type=Path, help="[[TODO-TEXT: help for --report counts JSON; default <out>.json]]")
+    ap = argparse.ArgumentParser(description="Find new articles that cite or are cited by your seed articles using OpenAlex.")
+    ap.add_argument("seeds", type=Path, help="The file containing seed DOIs, such as your included.tsv or a text file of DOIs.")
+    ap.add_argument("-o", "--out", type=Path, required=True, help="The path to save the new snowball CSV file.")
+    ap.add_argument("--report", type=Path, help="The path to save the JSON summary report, defaults to the output path with a .json suffix.")
     ap.add_argument("--direction", choices=["both", "backward", "forward"], default="both",
-                    help="[[TODO-TEXT: help for --direction]]")
-    ap.add_argument("--max-forward", type=int, default=500, help="[[TODO-TEXT: help for --max-forward cap per seed]]")
+                    help="The search direction, choose from both, backward, or forward.")
+    ap.add_argument("--max-forward", type=int, default=500, help="The maximum number of forward citations to fetch per seed, defaults to 500.")
     args = ap.parse_args(argv)
 
     seeds = read_seeds(args.seeds)
