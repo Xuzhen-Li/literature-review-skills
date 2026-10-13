@@ -154,16 +154,16 @@ MIT. Copyright (c) 2026 Xuzhen Li. See [LICENSE](LICENSE).
 /plugin install literature-review-skills@literature-review-skills
 ```
 
-支持 Agent Plugins 标准的宿主使用根目录的 `plugin.json` 打包格式。Codex 读取 `.agents/plugins/marketplace.json` 文件。终端是一个文本窗口，您可以在其中直接向您的计算机输入命令。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Codex 进行安装。
+支持 Agent Plugins 标准的宿主使用根目录的 `plugin.json` 打包格式。Codex 读取 `.agents/plugins/marketplace.json` 文件。终端是一个文本窗口，您可以在其中直接向您的计算机输入命令。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Codex 进行安装。然后在 Codex 聊天框中使用 `/plugins` 安装插件。
 
 ```bash
 codex plugin marketplace add Xuzhen-Li/literature-review-skills
 ```
 
-Cursor 没有代码库市场文件。克隆意味着将文件夹的精确副本从互联网下载到您的计算机上。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Cursor 进行克隆。
+此代码库不提供 Cursor 市场文件。克隆意味着将文件夹的精确副本从互联网下载到您的计算机上。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Cursor 进行克隆。
 
 ```bash
-git clone https://github.com/Xuzhen-Li/literature-review-skills ~/.cursor/plugins/local/literature-review-skills
+git clone https://github.com/Xuzhen-Li/literature-review-skills $HOME/.cursor/plugins/local/literature-review-skills
 ```
 
 符号链接是指向计算机上另一个文件夹的快捷方式文件。指向其他地方的 `plugins/local` 下的符号链接会被跳过，因此您必须直接将文件复制或克隆到那里。
