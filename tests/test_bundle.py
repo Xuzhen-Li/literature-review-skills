@@ -14,9 +14,10 @@ sys.modules["bundle"] = bundle
 spec.loader.exec_module(bundle)
 
 
-@pytest.fixture()
-def built(tmp_path):
-    out = tmp_path / "dist"
+@pytest.fixture(scope="module")
+def built(tmp_path_factory):
+    """One build shared by every test in this module; tests only read it."""
+    out = tmp_path_factory.mktemp("bundle") / "dist"
     return out, bundle.build(out)
 
 
@@ -24,13 +25,13 @@ def tree(root: Path) -> dict[str, bytes]:
     return {p.relative_to(root).as_posix(): p.read_bytes() for p in sorted(root.rglob("*")) if p.is_file()}
 
 
-def test_rebuild_is_byte_identical(tmp_path):
-    a, b = tmp_path / "a", tmp_path / "b"
-    bundle.build(a)
-    bundle.build(b)
-    bundle.build(b)  # rebuilding over an existing output gives the same files
-    assert tree(a) == tree(b)
-    assert tree(a)
+def test_rebuild_is_byte_identical(built, tmp_path):
+    first, _ = built
+    second = tmp_path / "dist"
+    bundle.build(second)
+    bundle.build(second)  # a rebuild over an existing output must not leave stale files
+    assert tree(first) == tree(second)
+    assert tree(first)
 
 
 def test_limits_pass(built):
