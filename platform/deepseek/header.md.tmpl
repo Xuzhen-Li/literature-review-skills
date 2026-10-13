@@ -1,14 +1,18 @@
 # Literature review skills: single-file edition
 
-[[TODO-TEXT:ds-intro]]
+This is a single-file edition of the literature-review skill suite for long-context chat on DeepSeek. The file size is about 196K characters and under 210K when filled, fitting the build cap of 400,000 characters. Its contents include the Instructions (which share the same rules as the ChatGPT instructions), the Shared rules (all four files), and all 17 skills along with their references. Scripts and tests are intentionally omitted. The purpose of this file is to give the assistant the full review workflow without requiring a local skill install.
 
 ## How to use this file
 
-[[TODO-TEXT:ds-how-to-use]]
+If you lack `dist/deepseek/literature-review-skills.md`, build it from a clone:
+
+    python3 scripts/bundle.py
+
+For web chat, open the DeepSeek chat page, start a new chat, and paste this file as your first message, or attach it if your client allows. Then send your review question. Paste `project.yaml` and `LOG.md` when the workflow needs them. Say "paste or attach" because web UI system prompt persistence and upload limits are unverified. API users should put the file text in the system message (the persistent instruction block an API client sends with every request). The API context size supports 1M tokens.
 
 ## Without a file system
 
-[[TODO-TEXT:ds-no-filesystem]]
+DeepSeek chat products cannot run script files and lack a project disk. Ask the user to keep `project.yaml`, `LOG.md`, and other project files on their computer; you only see what they paste or attach. When a step needs a script, direct them to the Scripts sections inside each skill in this same file for the exact command lines. Tell the user to run the Python scripts locally on their own computer from the suite root, or work by hand if they cannot run Python. Always ask them to paste the output file contents back. Never invent script output.
 
 ## Contents
 
