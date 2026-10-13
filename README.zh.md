@@ -144,3 +144,12 @@ python3 -m pytest
 ## 许可证
 
 MIT. Copyright (c) 2026 Xuzhen Li. See [LICENSE](LICENSE).
+
+## [[TODO-TEXT]]
+
+[[TODO-TEXT]]
+
+```text
+/plugin marketplace add Xuzhen-Li/literature-review-skills
+/plugin install literature-review-skills@literature-review-skills
+```

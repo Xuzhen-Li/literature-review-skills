@@ -144,3 +144,12 @@ The suite does not replace the authors' responsibility for the review, for check
 ## License
 
 MIT. Copyright (c) 2026 Xuzhen Li. See [LICENSE](LICENSE).
+
+## [[TODO-TEXT]]
+
+[[TODO-TEXT]]
+
+```text
+/plugin marketplace add Xuzhen-Li/literature-review-skills
+/plugin install literature-review-skills@literature-review-skills
+```
