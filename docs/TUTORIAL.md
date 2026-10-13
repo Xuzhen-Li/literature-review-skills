@@ -19,10 +19,10 @@ Success means seeing the assistant's opening line and having the `project.yaml` 
 - Finding the button to create a custom GPT in ChatGPT [to verify]
 - Finding the DeepSeek website address and its file upload size limit [to verify]
 - Running all commands smoothly on Windows [to verify]
-- Updating the repository to a newer version [to verify]
+- Updating the repository to a newer version: see the FAQ.
 - Opening the database homepage when chatting in ChatGPT or DeepSeek [to verify]
 
-You need to open a terminal, which is a text window where you type commands. On macOS, open Applications, then Utilities, then Terminal. On Windows, use Git Bash if Git for Windows is installed, or PowerShell only if `bash` is already on PATH.
+You need to open a terminal, which is a text window where you type commands. On macOS, open Applications, then Utilities, then Terminal, or press Command+Space and search for Terminal. On Windows, use Git Bash if Git for Windows is installed, or PowerShell only if `bash` is already on PATH.
 
 Run the following commands to download this repository:
 
@@ -104,7 +104,7 @@ In chat, the GPT asks you to paste or attach `project.yaml` and `LOG.md`, or rou
 
 [screenshot to add] chatgpt-first-reply
 
-Note: Enterprise custom GPTs are retiring on 2026-12-11. After that, please switch to the Cursor or DeepSeek route.
+Note: Custom GPTs on the Enterprise plan are retiring on 2026-12-11. After that, please switch to the Cursor or DeepSeek route.
 
 Note: Chat platforms cannot run scripts.
 
@@ -168,7 +168,7 @@ On ChatGPT or DeepSeek, you keep `project.yaml` and `LOG.md` yourself and paste 
 
 ### What is the difference between a skill and a plugin? Which should I use?
 
-Both install the same content, just in different places. We recommend using skills (installed to `~/.cursor/skills`). The local plugin is a backup Route B.
+The 17 skills are the same, but the plugin route puts the whole repository (including `.cursor/rules`, `scripts`, `platform`, `plugin.json`) into `~/.cursor/plugins/local/`, and whether Cursor picks up `skills/` from the plugin route is [to verify]. We recommend using skills (installed to `~/.cursor/skills`). The local plugin is a backup Route B.
 
 ### I have no programming experience. Do I have to use a terminal?
 
@@ -192,7 +192,7 @@ Paste only `instructions.md` into the Instructions box. Upload the 18 knowledge 
 
 ### Will this still work after custom GPTs are retired?
 
-Enterprise custom GPTs are retiring on 2026-12-11. After that, please switch to the Cursor or DeepSeek route.
+Custom GPTs on the Enterprise plan are retiring on 2026-12-11. After that, please switch to the Cursor or DeepSeek route.
 
 ### How large a file can I upload to DeepSeek on the web?
 
@@ -220,11 +220,11 @@ Use Git Bash if Git for Windows is installed, or PowerShell only if `bash` is al
 
 ### How do I update to a new version?
 
-Run `git pull` then run the `install.sh` script again.
+Run `git pull` then run the `install.sh` script again; a rerun prints `unchanged  link ...` instead of linked, and this is normal.
 
 ### How do I uninstall?
 
-Run these commands:
+Run these commands (if you installed only cursor, you only need `bash install.sh --target cursor --uninstall`; the agents command is only needed if agents was installed, but running it anyway is harmless and shows 0 removal(s)):
 
 ```bash
 bash install.sh --target cursor --uninstall

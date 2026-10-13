@@ -19,10 +19,10 @@ DeepSeek 用户请看第 3 节。
 - 在 ChatGPT 里找到新建 custom GPT 的按钮位置【待核实】
 - DeepSeek 网页端网址以及文件上传大小限制【待核实】
 - 在 Windows 电脑上运行全部命令的支持情况【待核实】
-- 将仓库更新到新版本的方法【待核实】
+- 将仓库更新到新版本的方法：请看 FAQ。
 - 在 ChatGPT 或 DeepSeek 对话中打开数据库主页的操作方式【待核实】
 
-打开终端（输入命令的窗口，macOS 按 Command+空格，输入“终端”，回车；Windows 装了 Git for Windows 就用 Git Bash，只有 `bash` 已在 PATH 上时才用 PowerShell）。
+打开终端（输入命令的窗口，macOS 打开应用程序，实用工具，终端，或者按 Command+空格，输入“终端”，回车；Windows 装了 Git for Windows 就用 Git Bash，只有 `bash` 已在 PATH 上时才用 PowerShell）。
 
 先回到个人主目录，再下载本仓库：
 
@@ -106,13 +106,13 @@ python3 scripts/bundle.py
 
 [截图待补] chatgpt-first-reply
 
-注意：Enterprise 计划的 custom GPT 将于 2026-12-11 停用。之后请改用 Cursor 或 DeepSeek 路线。
+注意：只有 Enterprise 计划的 custom GPT 将于 2026-12-11 停用。之后请改用 Cursor 或 DeepSeek 路线。
 
 注意：聊天里不能运行脚本。
 
 ## 3. 在 DeepSeek 里用
 
-构建步骤同第 2 节，文件是 `dist/deepseek/literature-review-skills.md`。打开 DeepSeek 聊天页，新开一个对话（网址和按钮【待核实】）。把整个文件作为第一条消息粘贴，或作为附件上传。网页端有没有持久的系统提示、上传上限多少。API 用户把文件放进 system 消息。
+构建步骤同第 2 节，文件是 `dist/deepseek/literature-review-skills.md`。打开 DeepSeek 聊天页，新开一个对话（网址和按钮【待核实】）。把整个文件作为第一条消息粘贴，或作为附件上传。我们无法保证网页端有没有持久的系统提示或者上传上限是多少【待核实】。API 用户把文件放进 system 消息。
 
 [截图待补] deepseek-attach
 
@@ -170,7 +170,7 @@ I confirm the topic lock
 
 ### skill 和插件有什么区别？我该用哪一种？
 
-两者装的内容一样，只是位置不同。推荐用 skill（装到 `~/.cursor/skills`）。本地插件是备用的路线 B。
+17 个 skill 是一样的，但插件路线会把整个仓库（包括 `.cursor/rules`、`scripts`、`platform`、`plugin.json`）放进 `~/.cursor/plugins/local/`，而 Cursor 是否从插件路线中读取 `skills/` 【待核实】。推荐用 skill（装到 `~/.cursor/skills`）。本地插件是备用的路线 B。
 
 ### 我没有编程经验，必须用终端吗？
 
@@ -194,7 +194,7 @@ I confirm the topic lock
 
 ### custom GPT 退役以后还能用吗？
 
-Enterprise 计划的 custom GPT 将于 2026-12-11 停用。之后请改用 Cursor 或 DeepSeek 路线。
+只有 Enterprise 计划的 custom GPT 将于 2026-12-11 停用。之后请改用 Cursor 或 DeepSeek 路线。
 
 ### DeepSeek 网页端能上传多大的文件？
 
@@ -222,11 +222,11 @@ Enterprise 计划的 custom GPT 将于 2026-12-11 停用。之后请改用 Curso
 
 ### 怎么更新到新版本？
 
-运行 `git pull` 后重新运行 `install.sh` 脚本。
+运行 `git pull` 后重新运行 `install.sh` 脚本；重新运行会打印 `unchanged  link ...` 而不是 linked，这是正常现象。
 
 ### 怎么卸载？
 
-运行以下命令：
+运行以下命令（如果你只安装了 cursor，只需要运行 `bash install.sh --target cursor --uninstall`；agents 命令只有在安装了 agents 时才需要，但直接运行它也是无害的，会显示 0 removal(s)）：
 
 ```bash
 bash install.sh --target cursor --uninstall
