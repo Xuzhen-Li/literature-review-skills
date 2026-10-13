@@ -101,6 +101,19 @@ Run the tests from this repository:
 python3 -m pytest
 ```
 
+## PRISMA 2020 flow diagram
+
+This tool draws a PRISMA 2020 flow diagram (the standard chart that counts how many records, reports and studies pass through Identification, Screening and Included in a systematic review) as SVG and PDF files. The inputs are `.json` or `.csv` counts files. An example JSON file is located at `skills/literature-screening/references/prisma_flow_examples/`. The outputs are `<stem>.svg` and `<stem>.pdf`, or you can use `--check` to validate the math without drawing the files. To use this, open a terminal in the repository root (the folder that contains the `skills/` directory) and run the commands below.
+
+```bash
+python3 skills/literature-screening/scripts/prisma_flow.py \
+  skills/literature-screening/references/prisma_flow_examples/counts_example.json \
+  --out prisma_flow
+python3 skills/literature-screening/scripts/prisma_flow.py counts.csv --out prisma_flow --check
+```
+
+![PRISMA 2020 flow example](skills/literature-screening/references/prisma_flow_examples/prisma_flow_example.svg)
+
 ## Quick start
 
 Say: `start a new review on drought responses in grapevine`.

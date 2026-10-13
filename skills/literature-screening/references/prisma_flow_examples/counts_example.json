@@ -1,0 +1,32 @@
+{
+  "databases": 1842,
+  "registers": 36,
+  "duplicates_removed": 512,
+  "automation_removed": 0,
+  "other_removed": 4,
+  "screened": 1362,
+  "screened_excluded": 1210,
+  "sought": 152,
+  "not_retrieved": 7,
+  "assessed": 145,
+  "excluded_reasons": {
+    "Wrong study design": 48,
+    "No relevant outcome": 39,
+    "Wrong population": 21
+  },
+  "studies_included": 41,
+  "reports_included": 44,
+  "other": {
+    "websites": 4,
+    "organisations": 2,
+    "citation_searching": 12,
+    "sought": 18,
+    "not_retrieved": 2,
+    "assessed": 16,
+    "excluded_reasons": {
+      "Wrong study design": 6,
+      "No relevant outcome": 3
+    },
+    "reports_included": 7
+  }
+}

@@ -12,6 +12,7 @@
 - `--uninstall` also removes dangling symlinks named after a repository skill whose target ends in `/skills/<same name>`.
 - The old `~/.codex/skills` directory is not cleaned automatically and can be deleted by hand.
 - Added `skills/manuscript-polishing/scripts/export_refs.py` to export CSV and TSV spreadsheet tables to BibTeX and CSL-JSON formats, using the library file to fill missing author details.
+- `skills/literature-screening/scripts/prisma_flow.py` draws a PRISMA 2020 flow diagram as SVG and PDF from a JSON or CSV counts file. It validates arithmetic and non-negative integers, supports an optional other-methods arm, includes example inputs under `references/prisma_flow_examples/`, and adds pytest coverage in `skills/literature-screening/tests/test_prisma_flow.py`.
 
 ## 0.3.0 - 2026-10-13
 
