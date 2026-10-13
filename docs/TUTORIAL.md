@@ -168,7 +168,7 @@ On ChatGPT or DeepSeek, you keep `project.yaml` and `LOG.md` yourself and paste 
 
 ### What is the difference between a skill and a plugin? Which should I use?
 
-The 17 skills are the same, but the plugin route puts the whole repository (including `.cursor/rules`, `scripts`, `platform`, `plugin.json`) into `~/.cursor/plugins/local/`, and whether Cursor picks up `skills/` from the plugin route is [to verify]. [[TODO-TEXT]] We recommend using skills (installed to `~/.cursor/skills`). The local plugin is a backup Route B.
+The 17 skills are the same, but the plugin route puts the whole repository (including `.cursor/rules`, `scripts`, `platform`, `plugin.json`) into `~/.cursor/plugins/local/`. Copy the folder into `~/.cursor/plugins/local/<name>`. Symlinks pointing outside this folder are skipped. Make sure local plugin imports are allowed since a Team or Enterprise admin can turn them off, then reload the window. A root `plugin.json` makes the folder an Agent Plugin. Our `plugin.json` has no skills field, so Cursor scans `skills/` by default. To check the install in Cursor, open Customize / Settings > Plugins where the skills are listed. This follows the Cursor docs and has not been tested on a real install. See https://cursor.com/docs/plugins and https://cursor.com/docs/reference/plugins for details. We recommend using skills (installed to `~/.cursor/skills`). The local plugin is a backup Route B.
 
 ### I have no programming experience. Do I have to use a terminal?
 

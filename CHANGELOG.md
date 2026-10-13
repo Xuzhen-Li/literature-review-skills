@@ -16,7 +16,7 @@
 - Added `asreview_io.py` script to export library records for ASReview LAB and import screening decisions back.
 - Added `snowball.py` script to fetch backward and forward citations via OpenAlex with automatic retry and partial result saving.
 - `plugin.json` and `.claude-plugin/plugin.json` version set to 0.3.0 to match this changelog.
-- [[TODO-TEXT]]
+- Clarified the `export_refs.py` `--csl` flag behavior, documented ASReview unlabelled records in `screening.csv`, explained the optional `LRS_CONTACT_EMAIL` and `--max-forward` limits, and updated Cursor plugin installation steps.
 
 ## 0.3.0 - 2026-10-13
 
