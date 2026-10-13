@@ -14,6 +14,9 @@ Options:
   --dry-run                           Print the plan and write nothing
   -h, --help                          Show this help
 
+Copy mode also copies shared/ to <name>/shared in each destination.
+Link mode reaches shared/ through the symlink target (the repo root).
+
 Destinations are under $HOME:
   cursor  ~/.cursor/skills/<name>
   claude  ~/.claude/skills/<name>
@@ -88,9 +91,15 @@ esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_SRC="${SCRIPT_DIR}/skills"
+SHARED_SRC="${SCRIPT_DIR}/shared"
 
 if [[ ! -d "$SKILLS_SRC" ]]; then
   echo "error: skills directory not found: $SKILLS_SRC" >&2
+  exit 1
+fi
+
+if [[ ! -d "$SHARED_SRC" ]]; then
+  echo "error: shared directory not found: $SHARED_SRC" >&2
   exit 1
 fi
 
@@ -131,6 +140,7 @@ fi
 
 echo "literature-review-skills install"
 echo "source: ${SKILLS_SRC}"
+echo "shared: ${SHARED_SRC}"
 echo "target: ${TARGET}"
 echo "mode: ${MODE}"
 echo "dry-run: ${dry_label}"
@@ -186,6 +196,10 @@ for tool in "${tools[@]}"; do
         find "$dest" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
         cp -R "$src"/. "$dest"/
         echo "copied  ${src}  ->  ${dest}"
+        # Copies have no repo root above them, so give each skill its own shared/.
+        mkdir -p "$dest/shared"
+        cp -R "$SHARED_SRC"/. "$dest/shared"/
+        echo "copied  ${SHARED_SRC}  ->  ${dest}/shared"
       fi
     fi
   done
