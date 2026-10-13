@@ -14,6 +14,8 @@ This suite is for researchers writing a narrative, systematic, scoping, or umbre
 - A tested deduplicator (`DOI`, then `PMID`, then normalized title and year) that writes PRISMA identification counts from RIS, PubMed NBIB, and CSV exports.
 - An identifier checker (`skills/search-export-and-dedup/scripts/verify_ids.py`) that resolves DOIs (Digital Object Identifier strings usually starting with 10. that name papers) via Crossref (a DOI registration agency) and PMIDs (PubMed numeric ids) via NCBI (the US National Center for Biotechnology Information), writing flagged results (`[VERIFY]`) to `identifier_check.csv` without modifying the input file.
 - `skills/manuscript-polishing/scripts/export_refs.py`: Exports your records table to BibTeX (a plain text reference format used by LaTeX) and CSL-JSON (a reference format used by Pandoc and Zotero).
+- ASReview LAB compatibility: Export your library to screen with ASReview LAB and import the results back into your staging files.
+- Citation snowballing: Use OpenAlex to automatically discover backward and forward citations from your seed articles.
 - Original figures by default, drawn as an editable SVG plus a PDF. A published panel can be cropped only from a PDF already on disk, with a source ledger. `needs-permission` panels are not publication-ready.
 - A narrative review keeps the most relevant records up to `narrative_core_cap` (default 500) and logs the rest as not read. Ties at the cutoff stay in. Systematic, scoping, and umbrella reviews still screen every deduplicated record.
 - Outlines keep limitations and next questions as separate sections. After journal lock, the style brief is refreshed and polishing follows its heading pattern, abstract shape, and figure budget.

@@ -77,6 +77,14 @@ This compares remote data against your table without modifying your input file. 
 
 Match rule used by the script: two records merge on normalized DOI; else on PMID when the DOIs do not conflict; else on normalized title+year when DOI and PMID do not conflict. Title matching lowercases text, turns punctuation into spaces, and requires a four-digit year. A title alone does not match. Details and examples are in `references/dedup_rules.md`.
 
+9. (Optional) Citation snowballing uses OpenAlex (an open catalog of global research) to find backward (articles the seed works cite) and forward (articles citing the seed works) connections based on the seed (starting) articles. Open macOS Terminal or Windows PowerShell and run this from the suite root to find new candidates:
+
+```bash
+python3 skills/search-export-and-dedup/scripts/snowball.py <project>/03-screening/included.tsv -o <project>/02-records/raw/snowball_YYYYMMDD.csv
+```
+
+If the script exits with code 1 and prints `no seed DOIs found`, no outputs are written. If it exits with code 1 for other errors (meaning an OpenAlex HTTP error or a rate limit that persists after one retry), partial results are saved and the report gets `"incomplete": true`. Exit code 2 means a network failure occurred and no files were written. Optional: configure an API key (a personal access code) as an environment variable (a system setting) named `OPENALEX_API_KEY` for higher limits. To deduplicate these results, add them to the `dedup.py` command using `--input <project>/02-records/raw/snowball_YYYYMMDD.csv --source snowball`. Report these counts in the PRISMA (systematic review reporting standard) identification via other methods column.
+
 ## Human gate(s)
 
 No lock. Checkpoint: the user confirms the exports are complete before you treat `library.csv` as the identification set. Record `exports_complete` in `LOG.md`.

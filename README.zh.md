@@ -14,6 +14,8 @@
 - 经过测试的去重器（依次检查 `DOI`、`PMID` 以及标准化的标题和年份），从 RIS、PubMed NBIB 和 CSV 导出文件中记录 PRISMA 识别数量统计。
 - 标识符验证器（`skills/search-export-and-dedup/scripts/verify_ids.py`）：通过 Crossref（DOI 注册机构）解析 `DOI`（通常以 10. 开头、用于命名论文的数字对象标识符），并通过 NCBI（美国国家生物技术信息中心）解析 `PMID`（PubMed 论文数字编号），将存疑项标记为 `[VERIFY]` 并输出至独立的 `identifier_check.csv`，且不会修改输入文件。
 - `skills/manuscript-polishing/scripts/export_refs.py`：将您的记录表格导出为 BibTeX（LaTeX 使用的纯文本参考文献格式）和 CSL-JSON（Pandoc 和 Zotero 使用的参考文献格式）。
+- ASReview LAB 兼容性: 将您的文献库导出至 ASReview LAB 进行筛选，并将结果导入回暂存文件。
+- 引文滚雪球 (Citation snowballing): 使用 OpenAlex 自动发现种子文章的向后和向前引文。
 - 默认生成原创图表，绘制为可编辑的 SVG 以及 PDF 文件。重复使用或改编的图表会被登记以申请权限，而非直接复制或裁剪。
 - 叙述性综述可以保留用户确认的核心文献，并将其余文献记录为未阅读。系统性、范围和伞形综述仍会筛选每一条去重后的记录。
 - 综述大纲将局限性和下一步研究问题作为独立的章节。锁定期刊后，会更新样式简报，润色步骤将遵循该期刊的标题模式、摘要形状和图表预算。
