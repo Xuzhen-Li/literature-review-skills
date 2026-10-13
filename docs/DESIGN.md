@@ -119,7 +119,7 @@ description: <one paragraph: what it does + concrete trigger phrases + when NOT 
 
 - `README.md` (what, who, install for Cursor/Claude Code/Codex, workflow diagram in Mermaid, quick start, skill table)
 - `LICENSE` (MIT, Copyright (c) 2026 Xuzhen Li)
-- `install.sh` (copies or symlinks `skills/*` into `~/.cursor/skills`, `~/.claude/skills`, or `~/.codex/skills`, chosen by flag; idempotent)
+- `install.sh` (copies or symlinks `skills/*` into `~/.cursor/skills`, `~/.claude/skills`, or `~/.codex/skills`, chosen by flag, placing `shared/` inside each copied skill in copy mode; idempotent)
 - `shared/` — `evidence_table_schema.md`, `gates.md`, `writing_rules.md`, `decision_cards.md`
 - `CHANGELOG.md`
 - `.github/` added later by the repo-decoration bot.

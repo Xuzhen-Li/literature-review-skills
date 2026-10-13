@@ -14,8 +14,8 @@ Options:
   --dry-run                           Print the plan and write nothing
   -h, --help                          Show this help
 
-Copy mode also copies shared/ to <name>/shared in each destination.
-Link mode reaches shared/ through the symlink target (the repo root).
+Copy mode also copies shared/ to <name>/shared in each destination skill.
+Link mode reaches shared/ through the symlink target, requiring the repository root to remain available.
 
 Destinations are under $HOME:
   cursor  ~/.cursor/skills/<name>
