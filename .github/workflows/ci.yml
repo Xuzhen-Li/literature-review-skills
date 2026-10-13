@@ -33,7 +33,7 @@ jobs:
           PANDAS_SPEC: ${{ matrix.pandas }}
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest
+          python -m pip install pytest pyyaml
           if [ "$PANDAS_SPEC" != "none" ]; then python -m pip install "$PANDAS_SPEC"; fi
       - name: Run tests
         run: python -m pytest -q
@@ -45,6 +45,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
+      - name: Install PyYAML
+        run: python -m pip install pyyaml
       - name: Check SKILL.md frontmatter
         run: python scripts/check_skills.py skills
 
