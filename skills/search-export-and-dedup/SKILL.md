@@ -55,10 +55,16 @@ Repeat `--input` / `--source` once per file. Source labels should be stable (`pu
 6. Check the arithmetic: sum of `by_source.*.records_exported` equals `identified_total`; `identified_total` minus `duplicates_removed` equals `records_after_deduplication`. If not, stop. Do not hand-edit the JSON to make it balance.
 7. Show the user the per-source counts and the duplicate total. This skill has no lock. Do not start title/abstract screening here.
 
-8. Verify identifiers: After deduplication, open Terminal (macOS) or Command Prompt/Terminal (Windows) and navigate to the suite root (the folder that contains the `skills/` directory). Run:
+8. Verify identifiers: After deduplication, open Terminal (macOS) or PowerShell (Windows) and navigate to the suite root (the folder that contains the `skills/` directory). Run:
 
 ```bash
 python3 skills/search-export-and-dedup/scripts/verify_ids.py <project>/02-records/library.csv
+```
+
+Run the same check again on `<project>/evidence/evidence_table.csv` before drafting:
+
+```bash
+python3 skills/search-export-and-dedup/scripts/verify_ids.py <project>/evidence/evidence_table.csv
 ```
 
 This compares remote data against your table without modifying your input file. Open the resulting `identifier_check.csv` in a spreadsheet app. Any non-`ok` status is flagged `[VERIFY]` for you to manually correct in your library. Running with `--offline` skips network calls; format-valid identifiers are marked `unchecked` while badly formed ones are still marked `invalid`.
