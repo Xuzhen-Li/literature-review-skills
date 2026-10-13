@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Draw a PRISMA 2020 flow diagram as SVG and PDF from a counts file.
 
-[[TODO-TEXT]]
+The script reads a counts file (a small JSON or CSV listing the number in each box of the diagram) and writes an SVG (a scalable image) and a PDF (a printable document). It checks that the numbers add up from box to box and verifies non-negative integers for the databases and registers arm, plus an optional other-methods arm. It requires a counts path and the `--out` stem. Optional arguments include `--check`, `--font`, `--label`, and `--no-caption`. If `--label` is used, it is joined with the source caption into a single sentence.
 """
 
 from __future__ import annotations

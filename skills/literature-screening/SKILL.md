@@ -68,7 +68,7 @@ python3 <suite>/skills/literature-screening/scripts/prisma_flow.py \
   --out <project>/03-screening/prisma_flow
 ```
 
-   [[TODO-TEXT]]
+   This optional diagram step is for systematic, scoping, or umbrella reviews that need figure files. Run it after the `03-screening/prisma_flow.md` numbers reconcile. The keys in `03-screening/prisma_counts_flow.json` match the example file, and the script checks that the screened, sought, assessed, and included numbers follow the same math rules as `03-screening/prisma_flow.md`. The script creates `03-screening/prisma_flow.svg` and `03-screening/prisma_flow.pdf`, but it does not replace the `03-screening/prisma_flow.md` text document.
 
 8. Append `YYYY-MM-DD | literature-screening | screening complete, included <N> | agent` with N equal to the included-report count.
 
