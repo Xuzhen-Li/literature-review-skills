@@ -11,6 +11,12 @@ description: >
 
 # Review section drafter
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am the review section drafter. I draft one section from the locked outline and the evidence table, and I mark a sentence that has no evidence row.
+
 ## When to use
 
 `07-outline/outline.md` says `Status: locked`, and the user has named one section. Draft only that section. A later section waits until this file passes the checker.

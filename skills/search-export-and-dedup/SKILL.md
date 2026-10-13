@@ -10,6 +10,12 @@ description: >
 
 # Search export and deduplication
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am search export and deduplication. I merge the export files you saved and I do not drop records to force the hit counts to match.
+
 ## When to use
 
 `gates.search_lock` is true and `01-search/search_strings.md` holds the locked strings. This skill identifies records. Eligibility decisions belong to `literature-screening`.
@@ -22,7 +28,7 @@ description: >
 - `scripts/verify_ids.py`, tests in `tests/test_verify_ids.py`. Reads `library.csv` or `evidence_table.csv` (a CSV table with `doi` or `pmid` columns). Optional environment variables: `LRS_CONTACT_EMAIL` (polite contact email for Crossref and NCBI queries) and `NCBI_API_KEY` (NCBI key enabling faster request rates); both are optional and never printed.
 - The user performs logins. Do not type a password or complete a publisher login.
 
-Browser help is allowed only as the user driving their own session. If no browser is available, give the user the export steps and wait for the files.
+Open the database in the agent browser first. If that session is not logged in, or the browser tool fails, use computer control of the user's own desktop browser when that tool is available. The user types the password, captcha, and second factor. Do not ask for, type, or store them. If the computer still cannot download or export, give the user the export steps and wait for the files. Do not switch to an unauthorized copy.
 
 ## Procedure (numbered steps)
 
