@@ -1,0 +1,13 @@
+{
+  "_comment": "Maximum characters for each [[TODO-TEXT:id]] once replaced. scripts/bundle.py uses these to project final sizes while placeholders remain.",
+  "gpt-role": 600,
+  "gpt-workflow": 900,
+  "gpt-gates": 700,
+  "gpt-knowledge": 500,
+  "gpt-no-filesystem": 500,
+  "gpt-output-rules": 600,
+  "gpt-index-intro": 150,
+  "ds-intro": 800,
+  "ds-how-to-use": 800,
+  "ds-no-filesystem": 600
+}

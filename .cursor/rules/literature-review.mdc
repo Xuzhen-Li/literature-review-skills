@@ -1,0 +1,55 @@
+---
+description: "Literature review tasks, continue the review, what is the next step, where are we in the review, start the review workflow"
+alwaysApply: false
+---
+
+# Literature review skills
+
+This repository is the source of 17 literature-review skills (instruction packs for each review stage). A Cursor rule tells Cursor how to handle a project. Cursor loads installed skills, and this rule guides agents to in-repo paths and shared gates (yes/no checkpoints the human must pass before later stages unlock).
+
+## Skills
+
+Below are the 17 skills in this repository, each with its `skills/<name>/SKILL.md` entry point:
+
+- `skills/exemplar-review-analysis/SKILL.md`
+- `skills/figure-permissions/SKILL.md`
+- `skills/journal-selection/SKILL.md`
+- `skills/literature-screening/SKILL.md`
+- `skills/manuscript-polishing/SKILL.md`
+- `skills/paper-deep-reading/SKILL.md`
+- `skills/review-figures-and-tables/SKILL.md`
+- `skills/review-orchestrator/SKILL.md`
+- `skills/review-outline-builder/SKILL.md`
+- `skills/review-project-setup/SKILL.md`
+- `skills/review-scoping-and-gaps/SKILL.md`
+- `skills/review-section-drafter/SKILL.md`
+- `skills/reviewer-response/SKILL.md`
+- `skills/search-export-and-dedup/SKILL.md`
+- `skills/search-strategy-builder/SKILL.md`
+- `skills/submission-package/SKILL.md`
+- `skills/zotero-library-sync/SKILL.md`
+
+## Routing
+
+Read `skills/review-orchestrator/SKILL.md` first when deciding what to do next. Route to exactly one next skill per turn. Do not start a second skill in the same turn. Judge the current stage from `project.yaml` and `LOG.md`. An earlier unpassed gate beats a later existing file.
+
+## Human gates
+
+Gates are yes/no checkpoints before later stages unlock. Only the YAML boolean `true` in `project.yaml` counts as passed (`topic_lock`, `search_lock`, `inclusion_lock`, `outline_lock`, `journal_lock`, `final_submit`). The agent must not confirm a gate for the user. Each confirmation in `LOG.md` must end with `| human`. See `shared/gates.md`.
+
+- `shared/gates.md`
+
+## Shared rules
+
+- `shared/decision_cards.md`
+- `shared/evidence_table_schema.md`
+- `shared/writing_rules.md`
+
+## Scripts
+
+Helper scripts live under `skills/<name>/scripts/` when present, with matching tests under `skills/<name>/tests/`. Open your terminal at the repo root and run the pytest test runner:
+```
+python -m pytest -q
+```
+
+Some skill tests need pandas. CI runs the tests on several combinations of Python and pandas versions.
