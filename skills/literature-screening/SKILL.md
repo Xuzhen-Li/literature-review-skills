@@ -95,3 +95,5 @@ sum of full-text reason counts = full_text_excluded
 ## Next step
 
 `zotero-library-sync` using `included.tsv`.
+
+[[TODO-TEXT: optional step for large systematic searches: export library.csv to ASReview LAB with scripts/asreview_io.py export, screen there, export CSV, run asreview_io.py import into 03-screening/asreview_decisions.csv (staging only), then a human adds reason_code for excludes, sets consensus, and copies rows into screening.csv; records ASReview did not show stay unscreened, and the stopping rule must be reported]]

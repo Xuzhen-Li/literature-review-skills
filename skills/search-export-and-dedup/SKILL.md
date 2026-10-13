@@ -84,3 +84,5 @@ No lock. Checkpoint: the user confirms the exports are complete before you treat
 ## Next step
 
 `literature-screening`.
+
+[[TODO-TEXT: optional step for backward/forward citation snowballing from included seeds with scripts/snowball.py (OpenAlex), feeding snowball.csv to dedup.py with --source snowball and reporting the counts in the PRISMA "identification via other methods" column; mention OPENALEX_API_KEY and LRS_CONTACT_EMAIL env vars and the --max-forward cap]]
