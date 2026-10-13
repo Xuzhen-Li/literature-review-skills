@@ -55,8 +55,14 @@ def test_overflow_is_reported(built, monkeypatch):
     assert any("instructions.md" in e and "limit 100" in e for e in errors)
 
 
+def with_placeholder(out, files, slot="gpt-role"):
+    key = out / "chatgpt" / "instructions.md"
+    return {**files, key: files[key] + f"\n[[TODO-TEXT:{slot}]]\n"}
+
+
 def test_budget_overflow_is_reported(built, monkeypatch):
     out, files = built
+    files = with_placeholder(out, files)
     real = bundle.budgets()
     monkeypatch.setattr(bundle, "budgets", lambda: {k: 10_000 if k == "gpt-role" else v for k, v in real.items()})
     errors = bundle.check(files, out)
@@ -65,6 +71,7 @@ def test_budget_overflow_is_reported(built, monkeypatch):
 
 def test_placeholder_without_budget_is_reported(built, monkeypatch):
     out, files = built
+    files = with_placeholder(out, files)
     real = bundle.budgets()
     monkeypatch.setattr(bundle, "budgets", lambda: {k: v for k, v in real.items() if k != "gpt-role"})
     errors = bundle.check(files, out)
