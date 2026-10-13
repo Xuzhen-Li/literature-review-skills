@@ -100,7 +100,7 @@ class Client:
                     except ValueError:
                         self._sleep(2.0)
                     continue
-                raise OpenAlexError(f"OpenAlex HTTP {exc.code} for {path}") from None
+                raise OpenAlexError(f"OpenAlex HTTP {exc.code} for {path or params.get('filter', '')}") from None
             except (urllib.error.URLError, TimeoutError, OSError) as exc:
                 raise NetworkUnavailable(str(getattr(exc, "reason", exc))) from None
         raise OpenAlexError("OpenAlex rate limit: retry later")

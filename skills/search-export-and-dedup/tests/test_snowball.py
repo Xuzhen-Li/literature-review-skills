@@ -199,4 +199,5 @@ def test_http_error_keeps_partial_results(sb, tmp_path, capsys):
     rows = list(csv.DictReader(out.open()))
     report = json.loads((tmp_path / "o.json").read_text())
     assert len(rows) == 60 and report["backward"] == 60 and report["incomplete"]
-    assert "HTTP 500" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "OpenAlex HTTP 500 for cites:W1" in err
