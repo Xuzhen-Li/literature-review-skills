@@ -6,6 +6,7 @@
 - Corrected the deduplication pandas test fixture DOI from `10.1/Beta` to `10.1000/Beta` and added `test_doi_needs_four_digit_registrant` and `test_pandas_csv_path_keeps_all_fields` in `skills/search-export-and-dedup/tests/test_dedup.py`.
 - Added `tests/test_install.py` to verify copy and link shared file resolution, repeatable copy installations, and that `--dry-run` writes nothing.
 - Added a CI workflow with a `pytest` matrix for Python 3.10 and 3.13 against pandas none, `pandas<3`, and `pandas>=3` (excluding Python 3.10 with `pandas>=3`), alongside an install job for shellcheck and link/copy smoke tests.
+- Add `scripts/check_skills.py` and `tests/test_check_skills.py` for portable `SKILL.md` frontmatter checks.
 
 ## 0.2.0 - 2026-10-09
 

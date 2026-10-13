@@ -128,4 +128,4 @@ Version 0.2.0 adds the narrative core, original figure files, required limitatio
 
 ## SKILL.md frontmatter check
 
-[[TODO-TEXT]]
+Frontmatter is a hidden settings block at the top of a text file. The `scripts/check_skills.py` script validates portable `SKILL.md` frontmatter under a folder like `skills/` and requires it to start and end with `---` lines. The script requires a non empty `name` matching the parent folder, a `description` under 1536 characters, and a whole file count under 500 lines. A terminal is a text window where you can type commands directly to your computer. Type `python3 scripts/check_skills.py` in Terminal on macOS or PowerShell on Windows to run it on the default folder, which returns an exit code of 0 when clean or 1 when a problem is found.
