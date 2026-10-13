@@ -655,7 +655,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("counts", help="counts file (.json or .csv)")
     ap.add_argument("--out", required=True, help="output path stem; writes <stem>.svg and <stem>.pdf")
     ap.add_argument("--font", help="Arial TrueType file to embed in the PDF (default: search system paths)")
-    ap.add_argument("--label", help="label line above the caption, e.g. 'Example data'")
+    ap.add_argument("--label", help="Optional text to join to the start of the figure caption as a single sentence.")
     ap.add_argument("--no-caption", action="store_true", help="omit the PRISMA 2020 source caption")
     ap.add_argument("--check", action="store_true", help="validate only; write nothing")
     args = ap.parse_args(argv)
