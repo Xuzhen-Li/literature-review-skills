@@ -1,0 +1,2 @@
+csl-data.schema.json: https://raw.githubusercontent.com/citation-style-language/schema/e3ce254a72c4470a5ed3b9d23b428017d25674e9/schemas/input/csl-data.json
+License: MIT (citation-style-language/schema)
