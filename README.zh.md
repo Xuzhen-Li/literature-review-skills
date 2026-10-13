@@ -145,11 +145,25 @@ python3 -m pytest
 
 MIT. Copyright (c) 2026 Xuzhen Li. See [LICENSE](LICENSE).
 
-## [[TODO-TEXT]]
+## 插件安装
 
-[[TODO-TEXT]]
+插件是一种赋予程序新功能的附加组件。市场文件是一份帮助程序了解如何使用插件的详情列表。Claude Code 使用 `.claude-plugin/` 打包格式并读取 `.claude-plugin/marketplace.json` 文件。在 Claude Code 聊天框中输入以下命令。
 
 ```text
 /plugin marketplace add Xuzhen-Li/literature-review-skills
 /plugin install literature-review-skills@literature-review-skills
 ```
+
+支持 Agent Plugins 标准的宿主使用根目录的 `plugin.json` 打包格式。Codex 读取 `.agents/plugins/marketplace.json` 文件。终端是一个文本窗口，您可以在其中直接向您的计算机输入命令。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Codex 进行安装。
+
+```bash
+codex plugin marketplace add Xuzhen-Li/literature-review-skills
+```
+
+Cursor 没有代码库市场文件。克隆意味着将文件夹的精确副本从互联网下载到您的计算机上。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Cursor 进行克隆。
+
+```bash
+git clone https://github.com/Xuzhen-Li/literature-review-skills ~/.cursor/plugins/local/literature-review-skills
+```
+
+符号链接是指向计算机上另一个文件夹的快捷方式文件。指向其他地方的 `plugins/local` 下的符号链接会被跳过，因此您必须直接将文件复制或克隆到那里。

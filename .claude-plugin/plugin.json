@@ -1,7 +1,7 @@
 {
   "name": "literature-review-skills",
   "version": "0.2.0",
-  "description": "[[TODO-TEXT]]",
+  "description": "A skill suite for writing literature reviews that stops at human gates with every claim tied to a source the project actually holds.",
   "author": {
     "name": "Xuzhen Li",
     "url": "https://github.com/Xuzhen-Li"

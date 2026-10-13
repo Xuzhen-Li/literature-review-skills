@@ -1,6 +1,6 @@
 {
   "name": "literature-review-skills",
-  "description": "[[TODO-TEXT]]",
+  "description": "A skill suite for writing literature reviews that stops at human gates with every claim tied to a source the project actually holds.",
   "owner": {
     "name": "Xuzhen Li",
     "url": "https://github.com/Xuzhen-Li"
@@ -9,7 +9,7 @@
     {
       "name": "literature-review-skills",
       "source": "./",
-      "description": "[[TODO-TEXT]]"
+      "description": "A skill suite for writing literature reviews that stops at human gates with every claim tied to a source the project actually holds."
     }
   ]
 }
