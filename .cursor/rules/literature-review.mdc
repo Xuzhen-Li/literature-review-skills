@@ -1,0 +1,51 @@
+---
+description: "[[TODO-TEXT:cursor-rule-description]]"
+globs:
+alwaysApply: false
+---
+
+# Literature review skills
+
+[[TODO-TEXT:cursor-rule-intro]]
+
+## Skills
+
+[[TODO-TEXT:cursor-rule-skills-intro]]
+
+- `skills/exemplar-review-analysis/SKILL.md`
+- `skills/figure-permissions/SKILL.md`
+- `skills/journal-selection/SKILL.md`
+- `skills/literature-screening/SKILL.md`
+- `skills/manuscript-polishing/SKILL.md`
+- `skills/paper-deep-reading/SKILL.md`
+- `skills/review-figures-and-tables/SKILL.md`
+- `skills/review-orchestrator/SKILL.md`
+- `skills/review-outline-builder/SKILL.md`
+- `skills/review-project-setup/SKILL.md`
+- `skills/review-scoping-and-gaps/SKILL.md`
+- `skills/review-section-drafter/SKILL.md`
+- `skills/reviewer-response/SKILL.md`
+- `skills/search-export-and-dedup/SKILL.md`
+- `skills/search-strategy-builder/SKILL.md`
+- `skills/submission-package/SKILL.md`
+- `skills/zotero-library-sync/SKILL.md`
+
+## Routing
+
+[[TODO-TEXT:cursor-rule-routing]]
+
+## Human gates
+
+[[TODO-TEXT:cursor-rule-gates]]
+
+- `shared/gates.md`
+
+## Shared rules
+
+- `shared/decision_cards.md`
+- `shared/evidence_table_schema.md`
+- `shared/writing_rules.md`
+
+## Scripts
+
+[[TODO-TEXT:cursor-rule-scripts]]
