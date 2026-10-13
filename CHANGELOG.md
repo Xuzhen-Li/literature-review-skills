@@ -9,6 +9,7 @@
 - Add `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` for Claude Code plugin installation via `/plugin marketplace add` and `/plugin install`.
 - Add root `plugin.json` using the Agent Plugins 1.0.0 schema and `.agents/plugins/marketplace.json`.
 - Document Codex installation via `codex plugin marketplace add` and Cursor local clone path.
+- Added `skills/search-export-and-dedup/scripts/verify_ids.py` (with unit tests in `skills/search-export-and-dedup/tests/test_verify_ids.py`) to verify DOIs via Crossref and PMIDs via NCBI esummary against table metadata, writing a separate `identifier_check.csv` report and flagging non-`ok` rows as `[VERIFY]` without altering input files; supports `--offline` format checking, `--strict` exit validation, and optional `LRS_CONTACT_EMAIL` and `NCBI_API_KEY` environment variables.
 - `skills/literature-screening/scripts/prisma_flow.py` draws a PRISMA 2020 flow diagram as SVG and PDF from a JSON or CSV counts file. [[TODO-TEXT]]
 
 ## 0.2.0 - 2026-10-09
