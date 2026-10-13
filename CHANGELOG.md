@@ -2,13 +2,28 @@
 
 ## Unreleased
 
-- `install.sh` copy mode copies the repository `shared/` directory into each destination skill as `<name>/shared/` and fails if `shared/` is missing.
-- Corrected the deduplication pandas test fixture DOI from `10.1/Beta` to `10.1000/Beta` and added `test_doi_needs_four_digit_registrant` and `test_pandas_csv_path_keeps_all_fields` in `skills/search-export-and-dedup/tests/test_dedup.py`.
-- Added `tests/test_install.py` to verify copy and link shared file resolution, repeatable copy installations, and that `--dry-run` writes nothing.
-- Added a CI workflow with a `pytest` matrix for Python 3.10 and 3.13 against pandas none, `pandas<3`, and `pandas>=3` (excluding Python 3.10 with `pandas>=3`), alongside an install job for shellcheck and link/copy smoke tests.
-- Add `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` for Claude Code plugin installation via `/plugin marketplace add` and `/plugin install`.
-- Add root `plugin.json` using the Agent Plugins 1.0.0 schema and `.agents/plugins/marketplace.json`.
-- Document Codex installation via `codex plugin marketplace add` and Cursor local clone path.
+- Add `scripts/check_skills.py` and `tests/test_check_skills.py` for portable `SKILL.md` frontmatter checks.
+- Added `agents` to install targets.
+- Added `--project DIR` flag to install into project-specific paths instead of `$HOME`.
+- Added `.lrs-installed` marker file generation for copy mode installations.
+- Changed `codex` target destination to `~/.agents/skills` instead of `~/.codex/skills`.
+- Changed `all` target to install `cursor`, `claude`, and `agents`.
+- `--uninstall` removes only this repository's symlinks and copies marked with `.lrs-installed`, so copies made before the marker existed are skipped.
+- `--uninstall` also removes dangling symlinks named after a repository skill whose target ends in `/skills/<same name>`.
+- The old `~/.codex/skills` directory is not cleaned automatically and can be deleted by hand.
+- Added `skills/manuscript-polishing/scripts/export_refs.py` to export CSV and TSV spreadsheet tables to BibTeX and CSL-JSON formats, using the library file to fill missing author details.
+- `skills/literature-screening/scripts/prisma_flow.py` draws a PRISMA 2020 flow diagram as SVG and PDF from a JSON or CSV counts file. It validates arithmetic and non-negative integers, supports an optional other-methods arm, includes example inputs under `references/prisma_flow_examples/`, and adds pytest coverage in `skills/literature-screening/tests/test_prisma_flow.py`.
+
+## 0.3.0 - 2026-10-13
+
+- Narrative reviews keep the most relevant records up to `narrative_core_cap` in `project.yaml` (default 500). The agent does not change that number. Ties at the cutoff stay in the core and are logged. Other rows are `not_read` with reason `below-cap`. Systematic, scoping, and umbrella reviews still screen the full library.
+- A published panel can be cropped from a PDF already on disk. `08-figures/panel_crop_ledger.csv` records the source, page, crop box, and copyright status. The same panel cannot be used twice. `needs-permission` does not become a publication file. An empty ledger writes nothing. Original SVG and PDF drawings remain the default.
+- Before the project file is finished, the Web of Science homepage is opened, and PubMed's homepage is opened when PubMed will be searched. The gate is `institutional_access`.
+- If the agent browser is not logged in, computer control may operate the user's own browser. The user types any password. The agent does not ask for it or store it.
+- When this computer cannot download a paper, `04-library/doi_for_upload.tsv` lists the DOI and the user uploads the PDF. The suite does not fetch the file.
+- Each skill says the paragraph in `shared/skill_intro.md` verbatim on first use.
+- Gate replies must be the exact sentence in `shared/gates.md`. `yes` and `ok` do not pass.
+- Changes already on main since 0.2.0 are included in this tag: `install.sh` copies `shared/` into each skill in copy mode; dedup DOI checks and install tests; CI for pytest and shellcheck; Claude Code, Codex, and Cursor plugin packaging; DOI and PMID checks in `verify_ids.py`.
 
 ## 0.2.0 - 2026-10-09
 

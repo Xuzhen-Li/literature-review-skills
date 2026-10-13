@@ -4,7 +4,7 @@ description: >
   Locks inclusion and exclusion criteria, then screens titles and abstracts
   and full texts with reasons, optional Cohen's kappa, and a PRISMA 2020
   flow that reconciles to the deduplicated library. Narrative reviews
-  instead rank the library and keep a user-confirmed core, logging the
+  instead rank the library and keep the cap in project.yaml, logging the
   rest as not read. Trigger on "screen the papers", "inclusion criteria",
   "PRISMA flow", "kappa", or "narrative core". Do not use it to
   deduplicate, to fetch PDFs from shadow libraries, or to write the review.
@@ -12,11 +12,17 @@ description: >
 
 # Literature screening
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am literature screening. I lock the criteria before any final decision, and a narrative review keeps the cap written in project.yaml.
+
 ## When to use
 
 `02-records/library.csv` and `02-records/prisma_counts.json` exist. Criteria are drafted and locked here before any final exclude decision. Read `review_type` before choosing a path.
 
-Narrative reviews do not claim a complete systematic flow. They lock criteria, then follow `references/narrative_core.md`: a rank suggestion for every record, a core the user sizes, and a not-read log for the rest. There is no fixed cap. Systematic, scoping, and umbrella reviews use the numbered steps below and do not write a narrative core.
+Narrative reviews do not claim a complete systematic flow. They lock criteria, then follow `references/narrative_core.md`: rank every record and keep `narrative_core_cap` from `project.yaml` (default 500). Ties at the cutoff stay in the core. The rest are `not_read` with reason `below-cap`. The agent does not change the cap. Systematic, scoping, and umbrella reviews use the numbered steps below and do not write a narrative core.
 
 ## Inputs (paths) / Preconditions
 
@@ -42,7 +48,7 @@ python3 <suite>/skills/literature-screening/scripts/kappa.py \
 
 `<suite>` is the directory that contains `skills/`. Bands in the JSON `interpretation` field follow Landis and Koch (Biometrics, 1977): `poor`, `slight`, `fair`, `moderate`, `substantial`, `almost_perfect`. If kappa is below 0.60, or the JSON says `undefined` because expected agreement is 1, revise the criteria wording and repeat the pilot. Pilot decisions are provisional. They are not copied into `screening.csv`.
 
-3. Ask: "Pass inclusion lock on 03-screening/criteria.md? Reply yes or no." On yes, set `gates.inclusion_lock` to `true` and append `YYYY-MM-DD | literature-screening | inclusion lock passed | human`. Do not write final screening rows before this yes.
+3. Ask: "Pass inclusion lock on 03-screening/criteria.md? Reply with: I confirm the inclusion lock." On that exact sentence, set `gates.inclusion_lock` to `true` and append `YYYY-MM-DD | literature-screening | inclusion lock passed | human`. Check the sentence with `skills/review-orchestrator/scripts/check_gate_phrase.py --gate inclusion_lock`. Do not write final screening rows before it matches.
 
 If `review_type` is `narrative`, stop this numbered procedure here and follow `references/narrative_core.md`. Do not run steps 4–8. Systematic, scoping, and umbrella reviews continue at step 4. They do not write `narrative_rank.tsv`, `core_decision.tsv`, or `not_read.tsv`, and they do not call `scripts/narrative_core.py`.
 
@@ -60,11 +66,21 @@ sum of full-text reason counts = full_text_excluded
 
 `full_text_excluded` does not include `FT_NOT_RETRIEVED`. If the sums fail, fix the CSV. Do not edit the flow numbers alone.
 
+   Optional diagram: write `03-screening/prisma_counts_flow.json` (keys in `references/prisma_flow_examples/counts_example.json`) and run:
+
+```bash
+python3 <suite>/skills/literature-screening/scripts/prisma_flow.py \
+  <project>/03-screening/prisma_counts_flow.json \
+  --out <project>/03-screening/prisma_flow
+```
+
+   This optional diagram step is for systematic, scoping, or umbrella reviews that need figure files. Run it after the `03-screening/prisma_flow.md` numbers reconcile. The keys in `03-screening/prisma_counts_flow.json` match the example file, and the script checks that the screened, sought, assessed, and included numbers follow the same math rules as `03-screening/prisma_flow.md`. The script creates `03-screening/prisma_flow.svg` and `03-screening/prisma_flow.pdf`, but it does not replace the `03-screening/prisma_flow.md` text document.
+
 8. Append `YYYY-MM-DD | literature-screening | screening complete, included <N> | agent` with N equal to the included-report count.
 
 ## Human gate(s)
 
-`inclusion_lock` before any final row in `screening.csv` or `core_decision.tsv`. A kappa number does not lock the criteria. The user does. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. The card is not the lock. Only a direct yes is.
+`inclusion_lock` before any final row in `screening.csv` or `core_decision.tsv`. A kappa number does not lock the criteria. The user does. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. The card is not the lock. Only the exact sentence is.
 
 ## Outputs (exact paths + formats)
 
@@ -72,8 +88,9 @@ sum of full-text reason counts = full_text_excluded
 - `03-screening/pilot.csv` and `kappa.json` when a dual pilot was run
 - `03-screening/screening.csv` — columns in step 4, or the narrative columns in `references/narrative_core.md`
 - `03-screening/included.tsv` — columns in step 6
+- `03-screening/prisma_flow.svg` and `prisma_flow.pdf` when the optional diagram was drawn
 - `03-screening/prisma_flow.md` — PRISMA 2020 boxes for a full eligibility screen, or the narrative core note
-- Narrative only: `03-screening/narrative_rank.tsv`, `core_decision.tsv`, and `not_read.tsv`
+- Narrative only: `03-screening/narrative_rank.tsv`, `core_decision.tsv`, `not_read.tsv`, and `cap_overflow.tsv`
 
 ## Quality checklist
 
@@ -90,7 +107,7 @@ sum of full-text reason counts = full_text_excluded
 - Do not drop duplicates again here. Duplicates were removed in `02-records/`.
 - Do not download a PDF from an unauthorized site to decide full text. If you cannot retrieve it legally, count it as not retrieved.
 - Maybe at title/abstract goes to full text. It is not a silent exclude.
-- Do not apply a numeric cap to a narrative core, and do not describe that core as a systematic review.
+- Do not change `narrative_core_cap`, and do not describe that core as a systematic review. Do not use the cap for a systematic, scoping, or umbrella review.
 
 ## Next step
 

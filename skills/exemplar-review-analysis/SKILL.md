@@ -11,6 +11,12 @@ description: >
 
 # Exemplar review analysis
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am exemplar review analysis. I describe the structure of reviews you can open, and I refresh that brief after the journal lock.
+
 ## When to use
 
 Every included record has a reading note or a logged skip, and either `06-exemplars/style_brief.md` does not exist yet or `journal_lock` is true and that brief still says `Refreshed after journal lock: no`. The user wants the outline skill, and later the polishing skill, to inherit a structure, not a paraphrase of someone else's review.

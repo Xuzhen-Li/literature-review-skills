@@ -55,3 +55,160 @@ def test_dry_run_writes_nothing(tmp_path):
     out = run_install(tmp_path, "--mode", "copy", "--dry-run").stdout
     assert "/shared" in out
     assert not (tmp_path / ".claude").exists()
+
+
+SKILL_NAMES = sorted(p.parent.name for p in (ROOT / "skills").glob("*/SKILL.md"))
+TARGET_DIRS = {
+    "claude": [".claude/skills"],
+    "codex": [".agents/skills"],
+    "cursor": [".cursor/skills"],
+    "agents": [".agents/skills"],
+    "all": [".cursor/skills", ".claude/skills", ".agents/skills"],
+}
+ALL_DIRS = [".claude/skills", ".agents/skills", ".cursor/skills", ".codex/skills"]
+
+
+def run_raw(home, *args, check=True):
+    env = dict(os.environ, HOME=str(home))
+    return subprocess.run(
+        ["bash", str(ROOT / "install.sh"), *args],
+        env=env, capture_output=True, text=True, check=check,
+    )
+
+
+def assert_installed(base, target, mode):
+    for rel in ALL_DIRS:
+        root = base / rel
+        if rel in TARGET_DIRS[target]:
+            assert sorted(p.name for p in root.iterdir()) == SKILL_NAMES
+            for name in SKILL_NAMES:
+                dest = root / name
+                assert (dest / "SKILL.md").is_file()
+                if mode == "link":
+                    assert dest.is_symlink()
+                    assert dest.resolve() == (ROOT / "skills" / name).resolve()
+                else:
+                    assert not dest.is_symlink()
+                    assert (dest / ".lrs-installed").is_file()
+                    assert (dest / "shared" / "gates.md").is_file()
+        else:
+            assert not root.exists(), rel
+
+
+def assert_uninstalled(base, target):
+    for rel in TARGET_DIRS[target]:
+        root = base / rel
+        assert not root.exists() or not any(root.iterdir()), rel
+
+
+def assert_shared_resolves(base, target, mode):
+    files = sorted(p.name for p in (ROOT / "shared").iterdir() if p.is_file())
+    for rel in TARGET_DIRS[target]:
+        for name in SKILL_NAMES:
+            skill = base / rel / name
+            # Copy: <skill>/shared. Link: suite root two levels above resolved SKILL.md.
+            if mode == "copy":
+                shared = skill / "shared"
+                assert sorted(p.name for p in shared.iterdir() if p.is_file()) == files
+            else:
+                shared = (skill / "SKILL.md").resolve().parents[2] / "shared"
+            for ref in shared_refs(skill):
+                assert (shared / ref).is_file(), (rel, name, ref)
+
+
+@pytest.mark.parametrize("scope", ["user", "project"])
+@pytest.mark.parametrize("mode", ["copy", "link"])
+@pytest.mark.parametrize("target", sorted(TARGET_DIRS))
+def test_target_mode_install_uninstall(tmp_path, target, mode, scope):
+    home = tmp_path / "home"
+    home.mkdir()
+    extra = []
+    base = home
+    if scope == "project":
+        base = tmp_path / "proj"
+        base.mkdir()
+        extra = ["--project", str(base)]
+    args = ["--target", target, "--mode", mode, *extra]
+    run_raw(home, *args)
+    run_raw(home, *args)  # idempotent
+    assert_installed(base, target, mode)
+    assert_shared_resolves(base, target, mode)
+    if scope == "project":
+        assert not any(home.iterdir())
+    dry = run_raw(home, *args, "--uninstall", "--dry-run").stdout
+    assert "would remove" in dry
+    assert_installed(base, target, mode)
+    run_raw(home, *args, "--uninstall")
+    assert_uninstalled(base, target)
+    assert (ROOT / "shared" / "gates.md").is_file()
+    for rel in TARGET_DIRS[target]:
+        assert not list((base / rel).rglob("shared")), rel
+    run_raw(home, *args, "--uninstall")  # second uninstall is a no-op
+
+
+def test_uninstall_leaves_foreign_entries(tmp_path):
+    root = tmp_path / ".agents" / "skills"
+    root.mkdir(parents=True)
+    foreign_dir = root / "review-orchestrator"
+    foreign_dir.mkdir()
+    (foreign_dir / "SKILL.md").write_text("mine", encoding="utf-8")
+    other = tmp_path / "elsewhere"
+    other.mkdir()
+    (root / "journal-selection").symlink_to(other)
+    (root / "unrelated").mkdir()
+    out = run_raw(tmp_path, "--target", "agents", "--uninstall").stdout
+    assert "skip" in out
+    assert (foreign_dir / "SKILL.md").read_text(encoding="utf-8") == "mine"
+    assert (root / "journal-selection").is_symlink()
+    assert (root / "unrelated").is_dir()
+
+
+def test_link_install_refuses_foreign_dir(tmp_path):
+    (tmp_path / ".agents" / "skills" / "review-orchestrator").mkdir(parents=True)
+    r = run_raw(tmp_path, "--target", "agents", "--mode", "link", check=False)
+    assert r.returncode == 1
+
+
+def test_project_dir_must_exist(tmp_path):
+    r = run_raw(tmp_path, "--project", str(tmp_path / "missing"), check=False)
+    assert r.returncode == 1
+    assert not any(tmp_path.iterdir())
+
+
+def test_unknown_target_rejected(tmp_path):
+    r = run_raw(tmp_path, "--target", "nope", check=False)
+    assert r.returncode == 2
+
+
+@pytest.mark.parametrize("args", [[], ["--target", "all"]])
+def test_all_target_exact_set(tmp_path, args):
+    run_raw(tmp_path, *args, "--mode", "copy")
+    assert sorted(p.name for p in tmp_path.iterdir()) == [".agents", ".claude", ".cursor"]
+    for d in (".agents", ".claude", ".cursor"):
+        assert sorted(p.name for p in (tmp_path / d / "skills").iterdir()) == SKILL_NAMES
+
+
+def test_uninstall_removes_dangling_links_from_deleted_clone(tmp_path):
+    root = tmp_path / ".agents" / "skills"
+    root.mkdir(parents=True)
+    gone = tmp_path / "old-clone" / "skills"
+    for name in SKILL_NAMES:
+        (root / name).symlink_to(gone / name)
+    run_raw(tmp_path, "--target", "agents", "--uninstall")
+    assert not any(root.iterdir())
+
+
+def test_uninstall_keeps_dangling_link_with_other_target(tmp_path):
+    root = tmp_path / ".agents" / "skills"
+    root.mkdir(parents=True)
+    name = SKILL_NAMES[0]
+    keep = [
+        (name, tmp_path / "gone" / "skills" / "other-name"),
+        (SKILL_NAMES[1], tmp_path / "gone" / "elsewhere" / SKILL_NAMES[1]),
+    ]
+    for link, target in keep:
+        (root / link).symlink_to(target)
+    out = run_raw(tmp_path, "--target", "agents", "--uninstall").stdout
+    assert "skip" in out
+    for link, _ in keep:
+        assert (root / link).is_symlink()

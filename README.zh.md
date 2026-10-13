@@ -12,6 +12,8 @@
 - 6个人工节点：主题、检索式、纳入标准、大纲、期刊和最终提交。用户通过节点，agent 会将其记录下来。
 - 建立证据表。草稿中的句子会映射到证据 ID，否则保留 `[NEEDS SOURCE]` 标记。
 - 经过测试的去重器（依次检查 `DOI`、`PMID` 以及标准化的标题和年份），从 RIS、PubMed NBIB 和 CSV 导出文件中记录 PRISMA 识别数量统计。
+- 标识符验证器（`skills/search-export-and-dedup/scripts/verify_ids.py`）：通过 Crossref（DOI 注册机构）解析 `DOI`（通常以 10. 开头、用于命名论文的数字对象标识符），并通过 NCBI（美国国家生物技术信息中心）解析 `PMID`（PubMed 论文数字编号），将存疑项标记为 `[VERIFY]` 并输出至独立的 `identifier_check.csv`，且不会修改输入文件。
+- `skills/manuscript-polishing/scripts/export_refs.py`：将您的记录表格导出为 BibTeX（LaTeX 使用的纯文本参考文献格式）和 CSL-JSON（Pandoc 和 Zotero 使用的参考文献格式）。
 - 默认生成原创图表，绘制为可编辑的 SVG 以及 PDF 文件。重复使用或改编的图表会被登记以申请权限，而非直接复制或裁剪。
 - 叙述性综述可以保留用户确认的核心文献，并将其余文献记录为未阅读。系统性、范围和伞形综述仍会筛选每一条去重后的记录。
 - 综述大纲将局限性和下一步研究问题作为独立的章节。锁定期刊后，会更新样式简报，润色步骤将遵循该期刊的标题模式、摘要形状和图表预算。
@@ -69,13 +71,13 @@ flowchart TD
 
 ## 安装
 
-`install.sh` 脚本会链接（默认）或复制包含 `SKILL.md` 文件的每个 `skills/<name>` 目录。链接模式通过符号链接目标访问 `shared/`，因此克隆必须保留在原处，而复制模式会将仓库的 `shared/` 目录复制到每个技能的 `<name>/shared/` 中。
+`install.sh` 脚本会链接（默认）或复制包含 `SKILL.md` 文件的每个 `skills/<name>` 目录（即一个技能）。链接模式通过符号链接（快捷方式）目标访问 `shared/`，因此克隆（本仓库的本地副本）必须保留在原处，而复制模式会将仓库的 `shared/` 目录复制到每个技能的 `<name>/shared/` 中。
 
-| Tool | Destination |
-|------|-------------|
-| Cursor | `~/.cursor/skills/<name>` |
-| Claude Code | `~/.claude/skills/<name>` |
-| Codex | `~/.codex/skills/<name>` |
+| 工具 | 用户目录目标路径 | 项目目录目标路径 |
+|------|------------------|---------------------|
+| Cursor | `~/.cursor/skills/<name>` | `DIR/.cursor/skills/<name>` |
+| Claude Code | `~/.claude/skills/<name>` | `DIR/.claude/skills/<name>` |
+| Codex / agents | `~/.agents/skills/<name>` | `DIR/.agents/skills/<name>` |
 
 ```bash
 bash install.sh --target cursor --mode link
@@ -85,7 +87,13 @@ bash install.sh --target all --dry-run
 bash install.sh -h
 ```
 
-`--target` 参数可指定为 `cursor`、`claude`、`codex` 或 `all`（默认为 `all`）。`--mode` 参数可指定为 `link`（默认）或 `copy`。`--dry-run` 标志仅打印执行计划而不写入文件。第二次 link 安装会保持正确的符号链接不变，而第二次 copy 安装会替换每个目标技能目录及其 `shared/` 副本。请开启新会话以重新加载技能。路径支持 `$HOME`。
+`--target` 参数可指定为 `cursor`、`claude`、`codex`、`agents` 或 `all`（默认为 `all`，将安装 `cursor`、`claude` 和 `agents`）。`--mode` 参数可指定为 `link`（默认）或 `copy`。`--project DIR` 会安装到指定的已存在目录而非 `$HOME`（用户主目录）。`--dry-run` 标志仅打印执行计划而不写入文件。第二次 link 安装会保持正确的符号链接不变，而第二次 copy 安装会替换每个目标技能目录及其 `shared/` 副本。请开启新会话以重新加载技能。路径支持 `$HOME`。在 macOS 上，请打开终端（应用程序 > 实用工具 > 终端）来运行命令。在 Windows 上，如果安装了 Git for Windows，请使用 Git Bash，或者仅在 `bash` 已存在于环境变量 PATH 中时使用 PowerShell。例如：
+
+```
+bash install.sh --target all --mode link
+```
+
+`--uninstall` 仅移除本仓库的符号链接以及带有 `.lrs-installed`（标记文件）的副本。早期版本中未标记的副本会被跳过；要移除它们，请先重新运行 copy 安装或手动删除。卸载还会移除以仓库技能命名且目标路径以 `/skills/<name>` 结尾的悬空符号链接，但会保留其他悬空链接。空的技能根目录会被保留。旧的 `~/.codex/skills` 目录不会被自动清理，可以手动删除。
 
 运行本仓库的测试：
 
@@ -154,16 +162,16 @@ MIT. Copyright (c) 2026 Xuzhen Li. See [LICENSE](LICENSE).
 /plugin install literature-review-skills@literature-review-skills
 ```
 
-支持 Agent Plugins 标准的宿主使用根目录的 `plugin.json` 打包格式。Codex 读取 `.agents/plugins/marketplace.json` 文件。终端是一个文本窗口，您可以在其中直接向您的计算机输入命令。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Codex 进行安装。
+支持 Agent Plugins 标准的宿主使用根目录的 `plugin.json` 打包格式。Codex 读取 `.agents/plugins/marketplace.json` 文件。终端是一个文本窗口，您可以在其中直接向您的计算机输入命令。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Codex 进行安装。然后在 Codex 聊天框中使用 `/plugins` 安装插件。
 
 ```bash
 codex plugin marketplace add Xuzhen-Li/literature-review-skills
 ```
 
-Cursor 没有代码库市场文件。克隆意味着将文件夹的精确副本从互联网下载到您的计算机上。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Cursor 进行克隆。
+此代码库不提供 Cursor 市场文件。克隆意味着将文件夹的精确副本从互联网下载到您的计算机上。在 macOS 的终端或 Windows 的 PowerShell 中输入以下命令为 Cursor 进行克隆。
 
 ```bash
-git clone https://github.com/Xuzhen-Li/literature-review-skills ~/.cursor/plugins/local/literature-review-skills
+git clone https://github.com/Xuzhen-Li/literature-review-skills $HOME/.cursor/plugins/local/literature-review-skills
 ```
 
 符号链接是指向计算机上另一个文件夹的快捷方式文件。指向其他地方的 `plugins/local` 下的符号链接会被跳过，因此您必须直接将文件复制或克隆到那里。

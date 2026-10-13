@@ -1,4 +1,5 @@
-# Copy into <project>/project.yaml. Gates stay boolean false until the owning skill records a user yes.
+# Copy into <project>/project.yaml. The homepage gate is set only after an exact sentence.
+# The agent does not change narrative_core_cap after the user confirms this file.
 
 title: "Working title"
 topic: "One sentence on what the user wants to know"
@@ -8,9 +9,13 @@ audience: "Who will read the review"
 timeline: "Target month or date the user gave"
 target_journal: undecided
 language: en
+search_pubmed: true
+narrative_core_cap: 500
+download_access: unknown
 created: 2026-10-09
 updated: 2026-10-09
 gates:
+  institutional_access: false
   topic_lock: false
   search_lock: false
   inclusion_lock: false
