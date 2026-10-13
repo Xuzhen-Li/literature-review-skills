@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "literature-review-skills",
+  "version": "0.2.0",
+  "description": "[[TODO-TEXT]]",
+  "author": {
+    "name": "Xuzhen Li",
+    "url": "https://github.com/Xuzhen-Li"
+  },
+  "homepage": "https://github.com/Xuzhen-Li/literature-review-skills",
+  "repository": "https://github.com/Xuzhen-Li/literature-review-skills",
+  "license": "MIT",
+  "keywords": ["literature-review", "systematic-review", "skills"]
+}
