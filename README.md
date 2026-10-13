@@ -69,7 +69,7 @@ flowchart TD
 
 ## Install
 
-`install.sh` links (default) or copies each `skills/<name>` directory that contains `SKILL.md`.
+`install.sh` links (default) or copies each `skills/<name>` directory that contains `SKILL.md`. Link mode reaches `shared/` through the symlink target so the clone must stay in place, and copy mode copies the repository `shared/` directory into `<name>/shared/` for every skill.
 
 | Tool | Destination |
 |------|-------------|
@@ -85,7 +85,7 @@ bash install.sh --target all --dry-run
 bash install.sh -h
 ```
 
-`--target` is `cursor`, `claude`, `codex`, or `all` (default `all`). `--mode` is `link` (default) or `copy`. `--dry-run` prints the plan and writes nothing. A second link install leaves correct symlinks unchanged. Start a new session so the tool reloads skills. Paths honor `$HOME`.
+`--target` is `cursor`, `claude`, `codex`, or `all` (default `all`). `--mode` is `link` (default) or `copy`. `--dry-run` prints the plan and writes nothing. A second link install leaves correct symlinks unchanged, and a second copy install replaces each destination skill directory including its `shared/` copy. Start a new session so the tool reloads skills. Paths honor `$HOME`.
 
 Run the tests from this repository:
 
