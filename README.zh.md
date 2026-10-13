@@ -69,7 +69,7 @@ flowchart TD
 
 ## 安装
 
-`install.sh` 脚本会链接（默认）或复制包含 `SKILL.md` 文件的每个 `skills/<name>` 目录。
+`install.sh` 脚本会链接（默认）或复制包含 `SKILL.md` 文件的每个 `skills/<name>` 目录。链接模式通过符号链接目标访问 `shared/`，因此克隆必须保留在原处，而复制模式会将仓库的 `shared/` 目录复制到每个技能的 `<name>/shared/` 中。
 
 | Tool | Destination |
 |------|-------------|
@@ -85,7 +85,7 @@ bash install.sh --target all --dry-run
 bash install.sh -h
 ```
 
-`--target` 参数可指定为 `cursor`、`claude`、`codex` 或 `all`（默认为 `all`）。`--mode` 参数可指定为 `link`（默认）或 `copy`。`--dry-run` 标志仅打印执行计划而不写入文件。第二次 link 安装会保持正确的符号链接不变。请开启新会话以重新加载技能。路径支持 `$HOME`。
+`--target` 参数可指定为 `cursor`、`claude`、`codex` 或 `all`（默认为 `all`）。`--mode` 参数可指定为 `link`（默认）或 `copy`。`--dry-run` 标志仅打印执行计划而不写入文件。第二次 link 安装会保持正确的符号链接不变，而第二次 copy 安装会替换每个目标技能目录及其 `shared/` 副本。请开启新会话以重新加载技能。路径支持 `$HOME`。
 
 运行本仓库的测试：
 
