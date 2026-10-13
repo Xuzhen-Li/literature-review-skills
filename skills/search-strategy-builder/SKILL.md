@@ -11,6 +11,12 @@ description: >
 
 # Search strategy builder
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am the search strategy builder. I write database strings from the locked question and I do not invent hit counts.
+
 ## When to use
 
 `gates.topic_lock` is true and `00-scope/scope_report.md` has a `Locked question`. This skill writes the strategy. It does not download records.
@@ -45,12 +51,12 @@ python3 <suite>/skills/search-strategy-builder/scripts/check_strings.py \
 `OK search strings` is required before the lock question.
 9. Fill the 16 PRISMA-S items from `references/prisma_s_template.md` at the bottom of `search_strings.md`. Item 15 (totals) and item 16 (deduplication) stay `[VERIFY]` until `search-export-and-dedup` has run; say that, do not invent totals.
 10. Note whether anyone peer-reviewed the strategy (PRESS 2015, McGowan et al., Journal of Clinical Epidemiology). If nobody did, item 14 says `not peer reviewed`.
-11. Ask: "Pass search lock on the strings in 01-search/search_strings.md dated [today]? Reply yes or no."
-12. On yes, only if no primary-database count is still `[VERIFY]`: set `gates.search_lock` to `true` and append `YYYY-MM-DD | search-strategy-builder | search lock passed | human`. On no, edit and ask again.
+11. Ask: "Pass search lock on the strings in 01-search/search_strings.md dated [today]? Reply with: I confirm the search lock."
+12. On that exact sentence, only if no primary-database count is still `[VERIFY]`: set `gates.search_lock` to `true` and append `YYYY-MM-DD | search-strategy-builder | search lock passed | human`. On any other reply, edit and ask again.
 
 ## Human gate(s)
 
-`search_lock`. Refuse to pass it while a database you claim to have searched still has `[VERIFY]` as its count, or while `check_strings.py` fails. Databases you explicitly did not search are allowed if the reason is written. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only a direct yes sets the lock. The locked string is the one marked `- Locked: yes`.
+`search_lock`. Refuse to pass it while a database you claim to have searched still has `[VERIFY]` as its count, or while `check_strings.py` fails. Databases you explicitly did not search are allowed if the reason is written. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only the exact sentence sets the lock. The locked string is the one marked `- Locked: yes`.
 
 ## Outputs (exact paths + formats)
 

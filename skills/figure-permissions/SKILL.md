@@ -11,6 +11,12 @@ description: >
 
 # Figure permissions
 
+## Opening
+
+On first use in a project, say this verbatim:
+
+I am figure permissions. I route each reused, adapted, or cropped panel to a credit line or a request, and I do not send the email.
+
 ## When to use
 
 `08-figures/figure_ledger.csv` has at least one `adapted` or `reused` row. Original rows are not entered in the permissions log. Start this skill as soon as those rows exist. Do not wait until the week of submission.
@@ -26,7 +32,7 @@ This skill is not legal advice. The rights holder or the journal's permissions d
 
 ## Procedure (numbered steps)
 
-1. Skip every ledger row with `type` = `original`.
+1. Skip every ledger row with `type` = `original`. If `08-figures/panel_crop_ledger.csv` exists, treat each `needs-permission` row as ungranted. `cc-by`, `cc-by-nc`, and `publisher-permission-granted` still need a credit line. A cropped panel is not publication-ready while `crop_blocked.tsv` lists it.
 2. For each remaining row, open the version-of-record page and read the license line. Map it to one router value: `cc-by`, `cc-by-sa`, `cc-by-nc`, `cc-by-nc-sa`, `cc-by-nd`, `cc-by-nc-nd`, `cc0`, `public-domain`, `publisher-owned`, `own-previous`, or `unknown`. Deeds are linked from https://creativecommons.org/licenses/.
 3. Run the router and paste the JSON `action` into the log:
 

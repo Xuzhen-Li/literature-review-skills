@@ -1,11 +1,17 @@
-"""Tests for narrative ranking and the user-confirmed core."""
+"""Tests for narrative ranking and the project cap."""
 
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from narrative_core import check_core, main, rank_records  # noqa: E402
+from narrative_core import (  # noqa: E402
+    cap_from_project_yaml,
+    check_core,
+    main,
+    rank_records,
+    split_by_cap,
+)
 
 LIBRARY = [
     {
@@ -42,136 +48,177 @@ def test_rank_keeps_every_row_and_orders_by_overlap_then_id():
     assert [row["record_id"] for row in tied] == ["R2", "R3"]
 
 
-def _ok_parts():
-    decisions = [
-        {"record_id": "R1", "decision": "core"},
-        {"record_id": "R2", "decision": "not_read"},
+def test_cap_reads_only_the_project_value():
+    assert cap_from_project_yaml("narrative_core_cap: 500\n") == 500
+    try:
+        cap_from_project_yaml("title: x\n")
+    except ValueError as exc:
+        assert "exactly once" in str(exc)
+    else:
+        raise AssertionError("missing cap should fail")
+
+
+def test_ties_at_the_cutoff_stay_and_the_rest_are_below_cap():
+    ranked = [
+        {"record_id": "A", "overlap_score": "3", "rank": "1"},
+        {"record_id": "B", "overlap_score": "2", "rank": "2"},
+        {"record_id": "C", "overlap_score": "2", "rank": "3"},
+        {"record_id": "D", "overlap_score": "1", "rank": "4"},
     ]
-    screening = [
-        {
-            "record_id": "R1",
-            "stage": "title_abstract",
-            "decision": "include",
-            "reason_code": "CORE",
-            "consensus": "include",
-        },
-        {
-            "record_id": "R2",
-            "stage": "title_abstract",
-            "decision": "not_read",
-            "reason_code": "NOT_READ",
-            "consensus": "not_read",
-        },
-    ]
-    flow = (
+    decisions, overflow = split_by_cap(ranked, 2)
+    by_id = {row["record_id"]: row for row in decisions}
+    assert by_id["A"]["decision"] == "core" and by_id["A"]["reason"] == ""
+    assert by_id["B"]["decision"] == "core"
+    assert by_id["C"]["decision"] == "core" and by_id["C"]["reason"] == "tie-at-cutoff"
+    assert overflow == ["C"]
+    assert by_id["D"]["decision"] == "not_read" and by_id["D"]["reason"] == "below-cap"
+    small, no_overflow = split_by_cap(ranked[:2], 500)
+    assert [row["decision"] for row in small] == ["core", "core"]
+    assert no_overflow == []
+
+
+def _flow():
+    return (
         "This file is not a complete systematic review.\n"
-        "Records outside the core were not read.\n"
+        "Records marked not read were outside the cap.\n"
     )
-    return decisions, screening, flow
 
 
-def test_check_accepts_a_user_sized_core_and_rejects_shortcuts():
-    decisions, screening, flow = _ok_parts()
+def test_check_accepts_the_project_cap_and_rejects_a_different_size():
+    ranked = rank_records(LIBRARY, "cold tolerance assays")
+    decisions, overflow = split_by_cap(ranked, 1)
+    core_ids = [row["record_id"] for row in decisions if row["decision"] == "core"]
+    not_read = [row["record_id"] for row in decisions if row["decision"] == "not_read"]
+    screening = []
+    for row in decisions:
+        if row["decision"] == "core":
+            screening.append(
+                {
+                    "record_id": row["record_id"],
+                    "stage": "title_abstract",
+                    "decision": "include",
+                    "reason_code": "CORE",
+                    "consensus": "include",
+                }
+            )
+        else:
+            screening.append(
+                {
+                    "record_id": row["record_id"],
+                    "stage": "title_abstract",
+                    "decision": "not_read",
+                    "reason_code": "below-cap",
+                    "consensus": "not_read",
+                }
+            )
     assert (
         check_core(
-            ["R1", "R2"],
+            ["R1", "R2", "R3"],
             decisions,
-            ["R1"],
-            ["R2"],
-            flow,
+            core_ids,
+            not_read,
+            _flow(),
             "narrative",
             screening,
+            ranked=ranked,
+            cap=1,
+            overflow_ids=overflow,
         )
         == []
     )
+    shrunk = [row for row in decisions if row["record_id"] != "R2"]
+    assert any(
+        "missing records" in error
+        for error in check_core(
+            ["R1", "R2", "R3"],
+            shrunk,
+            core_ids,
+            not_read,
+            _flow(),
+            "narrative",
+            screening,
+            ranked=ranked,
+            cap=1,
+            overflow_ids=overflow,
+        )
+    )
     assert any(
         "full eligibility" in error
-        for error in check_core(["R1"], decisions, ["R1"], [], flow, "systematic", screening)
+        for error in check_core(
+            ["R1"],
+            decisions,
+            core_ids,
+            [],
+            _flow(),
+            "systematic",
+            None,
+            ranked=ranked,
+            cap=1,
+            overflow_ids=[],
+        )
     )
-    dropped = check_core(["R1", "R2"], decisions[:1], ["R1"], [], flow, "narrative", screening)
-    assert any("missing records" in error for error in dropped)
-    bad_flow = check_core(
-        ["R1", "R2"],
-        decisions,
-        ["R1"],
-        ["R2"],
-        "Core records: 1\n",
-        "narrative",
-        screening,
-    )
-    assert any("not a complete systematic review" in error for error in bad_flow)
-    capped = [dict(row, max_core="200") for row in decisions]
-    assert any("fixed caps" in error for error in check_core(
-        ["R1", "R2"], capped, ["R1"], ["R2"], flow, "narrative", screening
-    ))
 
 
-def test_no_numeric_cap_is_applied_and_full_screen_modes_refuse(tmp_path, capsys):
-    """A size written into the question, a trailing flag, or a later row never drops records."""
-    library_rows = [
-        {
-            "record_id": f"R{index:02d}",
-            "title": f"cold tolerance assay {index}",
-            "abstract": "winter buds",
-        }
-        for index in range(12)
-    ]
-    ranked = rank_records(library_rows, "keep only the top 3 cold tolerance papers")
-    assert len(ranked) == 12
-    assert [row["record_id"] for row in ranked] == [f"R{index:02d}" for index in range(12)]
-    assert all("max_core" not in row for row in ranked)
-
-    decisions, screening, flow = _ok_parts()
-    decisions = [
-        {"record_id": "R1", "decision": "core"},
-        {"record_id": "R2", "decision": "not_read", "max_core": "1"},
-    ]
-    capped = check_core(
-        ["R1", "R2"], decisions, ["R1"], ["R2"], flow, "narrative", screening
-    )
-    assert any("fixed caps" in error for error in capped)
-
+def test_cli_apply_uses_the_cap_and_refuses_a_substitute_flag(tmp_path, capsys):
     library = tmp_path / "library.csv"
     library.write_text(
         "record_id,title,abstract\n"
-        + "".join(f"R{index},Cold tolerance {index},winter\n" for index in range(12)),
+        "R1,Cold tolerance assays,winter buds\n"
+        "R2,Cold tolerance notes,winter\n"
+        "R3,Warehouse inventory,pallets\n",
         encoding="utf-8",
     )
-    out = tmp_path / "narrative_rank.tsv"
-    assert main([
-        "rank",
-        "--library", str(library),
-        "--question", "top 3 only",
-        "--out", str(out),
-        "--max-core", "3",
-    ]) == 2
-    assert not out.exists()
-    captured = capsys.readouterr()
-    assert "fixed caps" in captured.err
-
-    decisions_path = tmp_path / "core_decision.tsv"
-    included = tmp_path / "included.tsv"
+    decisions = tmp_path / "core_decision.tsv"
     not_read = tmp_path / "not_read.tsv"
-    screening_path = tmp_path / "screening.csv"
-    flow_path = tmp_path / "prisma_flow.md"
-    decisions_path.write_text(
-        "record_id,decision\n" + "".join(
-            f"R{index},{'core' if index == 0 else 'not_read'}\n" for index in range(12)
-        ),
+    overflow = tmp_path / "cap_overflow.tsv"
+    rank_out = tmp_path / "narrative_rank.tsv"
+    assert main([
+        "apply",
+        "--library", str(library),
+        "--question", "cold tolerance",
+        "--cap", "1",
+        "--decisions", str(decisions),
+        "--not-read", str(not_read),
+        "--overflow", str(overflow),
+        "--rank-out", str(rank_out),
+    ]) == 0
+    text = decisions.read_text(encoding="utf-8")
+    assert "below-cap" in text
+    assert "R3" in not_read.read_text(encoding="utf-8")
+    assert main(["--max-core", "3", "rank", "--library", str(library)]) == 2
+    assert "project.yaml" in capsys.readouterr().err
+
+
+def test_full_screen_modes_refuse_the_cap(tmp_path, capsys):
+    library = tmp_path / "library.csv"
+    library.write_text(
+        "record_id,title,abstract\nR1,Cold tolerance assays,winter buds\n",
         encoding="utf-8",
     )
-    included.write_text("record_id\nR0\n", encoding="utf-8")
-    not_read.write_text(
-        "record_id\n" + "".join(f"R{index}\n" for index in range(1, 12)),
+    rank_out = tmp_path / "narrative_rank.tsv"
+    decisions = tmp_path / "core_decision.tsv"
+    not_read = tmp_path / "not_read.tsv"
+    overflow = tmp_path / "cap_overflow.tsv"
+    included = tmp_path / "included.tsv"
+    screening = tmp_path / "screening.csv"
+    flow = tmp_path / "prisma_flow.md"
+    main([
+        "apply",
+        "--library", str(library),
+        "--question", "cold tolerance",
+        "--cap", "500",
+        "--decisions", str(decisions),
+        "--not-read", str(not_read),
+        "--overflow", str(overflow),
+        "--rank-out", str(rank_out),
+    ])
+    included.write_text("record_id\nR1\n", encoding="utf-8")
+    screening.write_text(
+        "record_id,stage,decision,reason_code,consensus\n"
+        "R1,title_abstract,include,CORE,include\n",
         encoding="utf-8",
     )
-    screening_lines = ["record_id,stage,decision,reason_code,consensus"]
-    screening_lines.append("R0,title_abstract,include,CORE,include")
-    screening_lines.extend(
-        f"R{index},title_abstract,not_read,NOT_READ,not_read" for index in range(1, 12)
-    )
-    screening_path.write_text("\n".join(screening_lines) + "\n", encoding="utf-8")
-    flow_path.write_text(
+    flow.write_text(
         "This file is not a complete systematic review.\nRecords were not read.\n",
         encoding="utf-8",
     )
@@ -180,26 +227,16 @@ def test_no_numeric_cap_is_applied_and_full_screen_modes_refuse(tmp_path, capsys
         code = main([
             "check",
             "--library", str(library),
-            "--decisions", str(decisions_path),
+            "--decisions", str(decisions),
             "--included", str(included),
             "--not-read", str(not_read),
-            "--flow", str(flow_path),
-            "--screening", str(screening_path),
+            "--flow", str(flow),
+            "--screening", str(screening),
+            "--rank", str(rank_out),
+            "--overflow", str(overflow),
+            "--cap", "500",
             "--review-type", review_type,
         ])
         assert code == 1
         assert "full eligibility" in capsys.readouterr().err
     assert {path.name for path in tmp_path.iterdir()} == before
-
-
-def test_cli_rank_and_refuses_a_cap(tmp_path):
-    library = tmp_path / "library.csv"
-    library.write_text(
-        "record_id,title,abstract\nR1,Cold tolerance assays,winter buds\n",
-        encoding="utf-8",
-    )
-    out = tmp_path / "narrative_rank.tsv"
-    assert main(["rank", "--library", str(library), "--question", "cold tolerance", "--out", str(out)]) == 0
-    text = out.read_text(encoding="utf-8")
-    assert "R1" in text and "decision" not in text.splitlines()[0]
-    assert main(["--max-core", "200", "rank", "--library", str(library)]) == 2

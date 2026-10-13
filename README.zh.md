@@ -70,13 +70,13 @@ flowchart TD
 
 ## 安装
 
-`install.sh` 脚本会链接（默认）或复制包含 `SKILL.md` 文件的每个 `skills/<name>` 目录。链接模式通过符号链接目标访问 `shared/`，因此克隆必须保留在原处，而复制模式会将仓库的 `shared/` 目录复制到每个技能的 `<name>/shared/` 中。
+`install.sh` 脚本会链接（默认）或复制包含 `SKILL.md` 文件的每个 `skills/<name>` 目录（即一个技能）。链接模式通过符号链接（快捷方式）目标访问 `shared/`，因此克隆（本仓库的本地副本）必须保留在原处，而复制模式会将仓库的 `shared/` 目录复制到每个技能的 `<name>/shared/` 中。
 
-| Tool | Destination |
-|------|-------------|
-| Cursor | `~/.cursor/skills/<name>` |
-| Claude Code | `~/.claude/skills/<name>` |
-| Codex | `~/.codex/skills/<name>` |
+| 工具 | 用户目录目标路径 | 项目目录目标路径 |
+|------|------------------|---------------------|
+| Cursor | `~/.cursor/skills/<name>` | `DIR/.cursor/skills/<name>` |
+| Claude Code | `~/.claude/skills/<name>` | `DIR/.claude/skills/<name>` |
+| Codex / agents | `~/.agents/skills/<name>` | `DIR/.agents/skills/<name>` |
 
 ```bash
 bash install.sh --target cursor --mode link
@@ -86,7 +86,13 @@ bash install.sh --target all --dry-run
 bash install.sh -h
 ```
 
-`--target` 参数可指定为 `cursor`、`claude`、`codex` 或 `all`（默认为 `all`）。`--mode` 参数可指定为 `link`（默认）或 `copy`。`--dry-run` 标志仅打印执行计划而不写入文件。第二次 link 安装会保持正确的符号链接不变，而第二次 copy 安装会替换每个目标技能目录及其 `shared/` 副本。请开启新会话以重新加载技能。路径支持 `$HOME`。
+`--target` 参数可指定为 `cursor`、`claude`、`codex`、`agents` 或 `all`（默认为 `all`，将安装 `cursor`、`claude` 和 `agents`）。`--mode` 参数可指定为 `link`（默认）或 `copy`。`--project DIR` 会安装到指定的已存在目录而非 `$HOME`（用户主目录）。`--dry-run` 标志仅打印执行计划而不写入文件。第二次 link 安装会保持正确的符号链接不变，而第二次 copy 安装会替换每个目标技能目录及其 `shared/` 副本。请开启新会话以重新加载技能。路径支持 `$HOME`。在 macOS 上，请打开终端（应用程序 > 实用工具 > 终端）来运行命令。在 Windows 上，如果安装了 Git for Windows，请使用 Git Bash，或者仅在 `bash` 已存在于环境变量 PATH 中时使用 PowerShell。例如：
+
+```
+bash install.sh --target all --mode link
+```
+
+`--uninstall` 仅移除本仓库的符号链接以及带有 `.lrs-installed`（标记文件）的副本。早期版本中未标记的副本会被跳过；要移除它们，请先重新运行 copy 安装或手动删除。卸载还会移除以仓库技能命名且目标路径以 `/skills/<name>` 结尾的悬空符号链接，但会保留其他悬空链接。空的技能根目录会被保留。旧的 `~/.codex/skills` 目录不会被自动清理，可以手动删除。
 
 运行本仓库的测试：
 

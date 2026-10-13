@@ -1,6 +1,6 @@
 # AGENTS.md
 
-AGENTS.md is a guidance file for Codex and other agents. This repository provides 17 literature-review skills (stage instruction packs), `shared/` rules, and `install.sh`. To install skills into `~/.cursor/skills`, `~/.claude/skills`, or `~/.codex/skills`, run `install.sh` with `--target` set to `cursor`, `claude`, `codex`, or `all` (default `all`). This file helps humans and agents locate skill paths, gates (checkpoints), and tests.
+AGENTS.md is a guidance file for Codex and other agents. This repository provides 17 literature-review skills (stage instruction packs), `shared/` rules, and `install.sh`. To install skills into `~/.cursor/skills`, `~/.claude/skills`, or `~/.agents/skills` (which Codex reads), run `install.sh` with `--target` set to `cursor`, `claude`, `agents`, or `all` (default `all`). This file helps humans and agents locate skill paths, gates (checkpoints), and tests.
 
 ## Repository layout
 
