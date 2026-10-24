@@ -110,7 +110,7 @@ No project lock and no wait. The user is asked only for the papers on `please_fe
 - `04-library/oa_check.csv` and `04-library/pdfs/<record_id>-<hash>.pdf` — written by `find_oa_pdfs.py`
 - `04-library/pdf_status.csv` — header in step 2, one row per included record
 - `04-library/fulltext_need.tsv` — `record_id`, `doi`, `need`, `why`, `rank`, one row per included paper without a PDF
-- `04-library/please_fetch.md` and `please_fetch.tsv` — regenerated on every `please_fetch.py` run (do not hand-edit; change `fulltext_need.tsv` and rerun); the ranked list for the user (`priority`, `record_id`, `doi`, `title`, `why`, `save_as`, `landing_url`)
+- `04-library/please_fetch.md` and `please_fetch.tsv` — regenerated on every `please_fetch.py` run (do not hand-edit; change `fulltext_need.tsv` and rerun); the ranked list for the user (`priority`, `record_id`, `doi`, `title`, `why`, `save_as`, `landing_url`, `pdf_url`; `pdf_url` is an open-access link that refused the script, shown so the user can try it in a browser first)
 - `04-library/abstract_only.tsv` — also regenerated on every run; missing papers read from the abstract; report them as a limitation
 - `04-library/uploads/<record_id>.pdf` — placed by the user under the `save_as` name (for a plain DOI list without `record_id`, the sanitized DOI plus a short hash, e.g. `10.1000_x-1a2b3c4d.pdf`); a file that does not start with `%PDF-`, such as a saved login page, does not count
 - Only when `use_zotero` is `true`: `04-library/included.ris`, `04-library/collections.md`, `04-library/collection_checklist.tsv` (`theme`, `record_id`, `user_confirmed`)

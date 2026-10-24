@@ -121,3 +121,11 @@ def test_plain_doi_rows_get_a_real_upload_name(tmp_path):
     up.mkdir()
     (up / f"{stem}.pdf").write_bytes(b"%PDF-1.7")
     assert pf.build(status, need, up, 15)[0] == []
+
+
+def test_blocked_oa_link_is_shown_to_user():
+    status = [{"record_id": "R9", "doi": "10.1/x", "title": "T", "local_path": "",
+               "pdf_url": "https://pub.example/x.pdf"}]
+    need = [{"record_id": "R9", "need": "essential", "why": "core", "rank": "1"}]
+    fetch, _, _, _ = pf.build(status, need, None, 15)
+    assert "try it in your browser first): https://pub.example/x.pdf" in pf.render_md(fetch, 0)

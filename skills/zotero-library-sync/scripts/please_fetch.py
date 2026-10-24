@@ -11,7 +11,8 @@ A paper goes on the list only when all three hold:
 
 Inputs
   --status  oa_check.csv from find_oa_pdfs.py (or pdf_status.csv): record_id,
-            doi, title, local_path, landing_url
+            doi, title, local_path, landing_url, pdf_url (an OA link whose download
+            failed is shown so the user can try it in a browser first)
   --need    fulltext_need.tsv written by the agent: record_id, doi, need,
             why, rank. need is essential | useful | abstract_ok; rank is 1 for
             the most important paper.
@@ -37,7 +38,7 @@ from pathlib import Path
 from typing import Optional, Sequence
 
 NEEDS = ("essential", "useful", "abstract_ok")
-TSV_FIELDS = ["priority", "record_id", "doi", "title", "why", "save_as", "landing_url"]
+TSV_FIELDS = ["priority", "record_id", "doi", "title", "why", "save_as", "landing_url", "pdf_url"]
 ABS_FIELDS = ["record_id", "doi", "title", "need", "why"]
 
 
@@ -103,7 +104,7 @@ def build(status: list[dict], need: list[dict], uploads: Optional[Path], max_n: 
             continue
         row = {"record_id": r.get("record_id", "") or t.get("record_id", ""),
                "doi": _doi(r.get("doi") or t.get("doi", "")), "title": r.get("title", ""),
-               "why": t.get("why", ""), "need": t["need"].lower(), "landing_url": r.get("landing_url", ""),
+               "why": t.get("why", ""), "need": t["need"].lower(), "landing_url": r.get("landing_url", ""), "pdf_url": r.get("pdf_url", ""),
                "_stem": upload_stem(r.get("record_id", ""), r.get("doi") or t.get("doi", ""))}
         if row["need"] == "essential":
             try:
@@ -141,6 +142,8 @@ def render_md(fetch: list[dict], n_missing_abstract: int) -> str:
         if r["title"]:
             lines.append(f"   {r['title']}")
         lines.append(f"   Why: {r['why']}")
+        if r.get("pdf_url"):
+            lines.append(f"   Open-access link that refused my download (try it in your browser first): {r['pdf_url']}")
         lines.append(f"   Save as: {r['save_as']}")
         lines.append("")
     if n_missing_abstract:
