@@ -4,7 +4,15 @@ AGENTS.md is a guidance file for Codex and other agents. This repository provide
 
 ## Start here
 
-Pick the entry skill from what the user already has (full table: `docs/START_HERE.md`): topic only -> `review-project-setup`; own papers/DOI list -> `review-project-setup`, export them as RIS (Zotero: Export Collection > RIS; PDF folders: import into Zotero first) or a `doi,title,year` CSV, then `search-export-and-dedup` with `--source manual` (dedup.py reads only `.ris`, `.nbib`, PubMed `.txt`, `.csv`; plain-DOI `.txt`, PDF folders and BibTeX are not supported); a draft -> `review-writing` (no `project.yaml` needed); near-final manuscript -> `journal-selection`; decision letter -> `reviewer-response`; unsure -> `review-orchestrator`. No library account: gate sentence `I will use open-access sources only`, then `skills/zotero-library-sync/scripts/find_oa_pdfs.py` for legal free PDFs. Never use shadow libraries.
+Select the entry skill based on what the user already has (full mapping in `docs/START_HERE.md`):
+
+* Topic only: `review-project-setup`.
+* Own papers or DOI list: `review-project-setup`. Export the collection as RIS (Zotero: Export Collection > RIS; for PDF folders, import into Zotero first to extract metadata) or build a CSV with a `doi,title,year` header, then run `search-export-and-dedup` with `--source manual`. Note that `dedup.py` only accepts `.ris`, `.nbib`, PubMed `.txt`, and `.csv` (plain-DOI `.txt`, raw PDF folders, and BibTeX are not supported).
+* Existing draft: `review-writing` (no `project.yaml` needed).
+* Near-final manuscript: `journal-selection`.
+* Decision letter: `reviewer-response`.
+* Unsure or mid-project: `review-orchestrator`.
+* No library account: use the gate sentence `I will use open-access sources only`, then run `skills/zotero-library-sync/scripts/find_oa_pdfs.py` to fetch legal free PDFs. Never use shadow libraries.
 
 ## Repository layout
 

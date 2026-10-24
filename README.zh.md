@@ -6,6 +6,22 @@
 
 本套件专为撰写叙述性、系统性、范围或伞形综述的研究人员设计，满足他们对可重复的文件夹结构，以及一个绝不跳过纳排标准、检索报告或权限申请的 agent 的需求。
 
+## 快速开始
+
+1. 安装对应工具的技能包：`bash install.sh --target claude`（可选 `cursor`、`codex` 或 `all`）。ChatGPT 和 DeepSeek 用户请看 `platform/README.md`。
+2. 打开 [docs/START_HERE.md](docs/START_HERE.md)，根据你手头已有的材料选择起点：
+
+| 你手头有 | 从这里开始 |
+| --- | --- |
+| 只有选题 | 输入 `start a new review on <topic>` |
+| 没有图书馆账号 | 初始化时回答 `I will use open-access sources only`；用 PubMed、OpenAlex 或 Europe PMC 检索，再用 `find_oa_pdfs.py` 下载免费全文 |
+| 自己的文献列表或 DOI 列表 | 从 Zotero 导出为 RIS，或整理成带 `doi,title,year` 表头的 CSV，运行去重时加上 `--source manual` |
+| 一份初稿 | 用 `review-writing`（不需要建项目文件夹） |
+| 接近定稿的稿件 | 依次运行 `journal-selection`、`manuscript-polishing`、`submission-package` |
+| 审稿意见 | 用 `reviewer-response` |
+
+3. 不知道下一步做什么？直接输入 `what is the next step` 调用 `review-orchestrator`。
+
 ## 功能
 
 - 18项技能，涵盖从项目建立到针对审稿意见逐条回复的全过程。`review-orchestrator` 会读取 `project.yaml` 并路由到下一个技能。

@@ -8,19 +8,19 @@ This suite is for researchers writing a narrative, systematic, scoping, or umbre
 
 ## Quick start
 
-1. Install for your tool: `bash install.sh --target claude` (or `cursor`, `codex`, `all`). ChatGPT and DeepSeek users: see `platform/README.md`.
-2. Open [docs/START_HERE.md](docs/START_HERE.md) and pick the row for what you already have:
+1. Install the skills for your tool: `bash install.sh --target claude` (or `cursor`, `codex`, `all`). If you use ChatGPT or DeepSeek, see `platform/README.md`.
+2. Open [docs/START_HERE.md](docs/START_HERE.md) and find the row that matches what you already have:
 
 | You have | Start with |
-|---|---|
+| --- | --- |
 | Only a topic | `start a new review on <topic>` |
-| No library account | answer `I will use open-access sources only` at setup; PubMed/OpenAlex/Europe PMC + `find_oa_pdfs.py` |
-| Your own papers or a DOI list | export them as RIS (Zotero) or a `doi,title,year` CSV, then `--source manual` |
+| No library account | Answer `I will use open-access sources only` at setup; use PubMed, OpenAlex, or Europe PMC, plus `find_oa_pdfs.py` |
+| Your own papers or a DOI list | Export them as RIS from Zotero or make a `doi,title,year` CSV, then run with `--source manual` |
 | A draft | `review-writing` (no project folder needed) |
-| A near-final manuscript | `journal-selection` → `manuscript-polishing` → `submission-package` |
+| A near-final manuscript | `journal-selection`, then `manuscript-polishing`, then `submission-package` |
 | Reviewer comments | `reviewer-response` |
 
-3. Lost? Say `what is the next step` (`review-orchestrator`).
+3. Not sure where you are? Say `what is the next step` to run `review-orchestrator`.
 
 ## Features
 

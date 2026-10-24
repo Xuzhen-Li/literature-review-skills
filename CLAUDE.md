@@ -1,3 +1,3 @@
 # CLAUDE.md
 
-Read `AGENTS.md` (entry points, skill paths, gates) and `docs/START_HERE.md` (where to start depending on what you already have).
+Read `AGENTS.md` for entry points, skill paths, and workflow gates. Read `docs/START_HERE.md` to see which skill to start with based on what the user already has.

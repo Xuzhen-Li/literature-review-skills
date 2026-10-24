@@ -142,7 +142,8 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
             out.append(rec)
             continue
         # Status comes from not_found/errored only. Never concatenate external text
-        # (API messages, titles) into note before the status decision below.
+        # (API messages, titles) into note before the status decision below,
+        # except the error branch, which appends {exc} (and also sets errored).
         hit, not_found, errored = None, 0, False
         for name, fn in (("openalex", openalex), ("unpaywall", unpaywall)):
             try:
