@@ -13,7 +13,7 @@ This suite is for researchers writing a narrative, systematic, scoping, or umbre
 
 | You have | Start with |
 | --- | --- |
-| Only a topic | `start a new review on <topic>` |
+| Only a topic | `start a new review on <topic>` (e.g. `start a new review on drought responses in grapevine`, which runs `review-project-setup`) |
 | No library account | Answer `I will use open-access sources only` at setup; use PubMed, OpenAlex, or Europe PMC, plus `find_oa_pdfs.py` |
 | Your own papers or a DOI list | Export them as RIS from Zotero or make a `doi,title,year` CSV, then run with `--source manual` |
 | A draft | `review-writing` (no project folder needed) |
@@ -132,12 +132,6 @@ python3 skills/literature-screening/scripts/prisma_flow.py counts.csv --out pris
 ```
 
 ![PRISMA 2020 flow example](skills/literature-screening/references/prisma_flow_examples/prisma_flow_example.svg)
-
-## Quick start
-
-Say: `start a new review on drought responses in grapevine`.
-
-That triggers `review-project-setup`. When `project.yaml` exists, say `what is the next step` to use `review-orchestrator`.
 
 ## Project folder
 
