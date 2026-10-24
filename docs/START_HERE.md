@@ -1,14 +1,12 @@
 # Start here
 
-> Prose in this file is a structural draft. [待Gemini润色]
-
 You do not have to start at step 1. Find the row that matches what you already have, and say the sentence in the last column to your AI tool (Claude Code, Cursor, Codex, ChatGPT, DeepSeek).
 
 | What you have | Start with | Skip | Say this |
 |---|---|---|---|
 | Only a topic, no papers | `review-project-setup` | nothing | `start a new review on <topic>` |
 | No library account (no Web of Science / Scopus) | `review-project-setup`, then answer `I will use open-access sources only` | Web of Science, Scopus, institutional login | `start a new review on <topic> using only free sources` |
-| A set of papers already (PDF folder, Zotero collection, RIS/BibTeX, or a DOI list) | `review-project-setup`, then `search-export-and-dedup` with your file as `--source manual` | database searching (record in the methods that the set is user-supplied) | `I already have my papers in <path>; set up a review from them` |
+| A set of papers already (Zotero collection, EndNote/Mendeley library, PDF folder, or a DOI list) | `review-project-setup`, then `search-export-and-dedup`: export the collection as RIS (Zotero: right-click collection > Export Collection > RIS); for a PDF folder, drag the PDFs into Zotero (it reads their metadata) and export RIS; for a DOI list, write a CSV with a `doi,title,year` header. Pass the `.ris` or `.csv` with `--source manual` (dedup.py reads only `.ris`, `.nbib`, `.txt` PubMed, and `.csv`) | database searching (record in the methods that the set is user-supplied) | `I already have my papers in <path>; set up a review from them` |
 | A draft (any state, .md or .docx) | `review-writing` | the whole pipeline; no `project.yaml` needed | `rewrite my review <path>; fix the logic` |
 | A near-final manuscript | `journal-selection`, then `manuscript-polishing`, then `submission-package` | search, screening, drafting | `pick a journal for <path>` / `polish <path> for <journal>` |
 | A decision letter | `reviewer-response` | everything else | `draft a response to these reviewer comments` |

@@ -46,7 +46,7 @@ python3 <suite>/skills/zotero-library-sync/scripts/find_oa_pdfs.py \
   --download <project>/04-library/uploads
 ```
 
-Use its `oa_status`, `pdf_url`, and `local_path` columns to fill `pdf_status.csv` (step 7): a saved file is `user_has_pdf` with `retrieval_route` `unpaywall` or `repository`; `closed` rows go to the upload list in step 8. If the script cannot reach the network, fall back to the manual Unpaywall query below. Manual query, one DOI at a time: URL-encode nothing inside the DOI path beyond what the docs show; the usual form is:
+Saved files are named `<record_id>-<hash>.pdf`, so copy `local_path` straight into `pdf_status.csv` (do not rely on `pdf_handoff.py accept` for them). It refuses to overwrite `-o` without `--force`, downloads only http/https links up to 100 MB, and exits 1 when a lookup or download failed. Use its `oa_status`, `pdf_url`, and `local_path` columns to fill `pdf_status.csv` (step 7): a saved file is `user_has_pdf` with `retrieval_route` `unpaywall` or `repository`; `closed` rows go to the upload list in step 8. If the script cannot reach the network, fall back to the manual Unpaywall query below. Manual query, one DOI at a time: URL-encode nothing inside the DOI path beyond what the docs show; the usual form is:
 
 ```text
 https://api.unpaywall.org/v2/<doi>?email=<user email>

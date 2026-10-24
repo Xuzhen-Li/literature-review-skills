@@ -6,7 +6,7 @@ An agent-agnostic skill suite that takes a researcher from a vague topic to a re
 
 This suite is for researchers writing a narrative, systematic, scoping, or umbrella review who want a repeatable folder layout and an agent that will not skip eligibility criteria, search reporting, or permissions.
 
-## Quick start  [待Gemini润色]
+## Quick start
 
 1. Install for your tool: `bash install.sh --target claude` (or `cursor`, `codex`, `all`). ChatGPT and DeepSeek users: see `platform/README.md`.
 2. Open [docs/START_HERE.md](docs/START_HERE.md) and pick the row for what you already have:
@@ -15,7 +15,7 @@ This suite is for researchers writing a narrative, systematic, scoping, or umbre
 |---|---|
 | Only a topic | `start a new review on <topic>` |
 | No library account | answer `I will use open-access sources only` at setup; PubMed/OpenAlex/Europe PMC + `find_oa_pdfs.py` |
-| Your own papers or a DOI list | set up the project, import your file with `--source manual` |
+| Your own papers or a DOI list | export them as RIS (Zotero) or a `doi,title,year` CSV, then `--source manual` |
 | A draft | `review-writing` (no project folder needed) |
 | A near-final manuscript | `journal-selection` → `manuscript-polishing` → `submission-package` |
 | Reviewer comments | `reviewer-response` |

@@ -19,6 +19,14 @@ import re
 import sys
 import zipfile
 import xml.etree.ElementTree as ET
+
+try:  # defusedxml blocks entity-expansion and external-entity tricks when installed
+    from defusedxml.ElementTree import fromstring as _fromstring
+except ImportError:  # stdlib expat does not fetch external entities; DOCTYPE refused below
+    def _fromstring(data: bytes):
+        if b"<!DOCTYPE" in data[:4096] or b"<!ENTITY" in data:
+            raise ValueError("XML part declares a DOCTYPE/ENTITY; refusing to parse")
+        return ET.fromstring(data)
 from typing import Optional, Sequence
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
@@ -58,7 +66,7 @@ def scan(path: str) -> dict:
         if "word/document.xml" not in names:
             raise ValueError("not a Word document (no word/document.xml)")
         for name in sorted(names, key=lambda n: n != "word/document.xml"):
-            root = ET.fromstring(zf.read(name))
+            root = _fromstring(zf.read(name))
             stack: list[dict] = []  # open fields: {"instr": [...], "kind": str|None}
             for p in root.iter(W + "p"):
                 plain, bib = [], []
@@ -153,7 +161,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         cur = scan(args.docx)
         base = scan(args.baseline) if args.baseline else None
-    except (OSError, zipfile.BadZipFile, ValueError, ET.ParseError) as exc:
+    except (OSError, zipfile.BadZipFile, ValueError, ET.ParseError, Exception) as exc:
         print(f"ERROR {exc}", file=sys.stderr)
         return 2
     fails, warns = [], []

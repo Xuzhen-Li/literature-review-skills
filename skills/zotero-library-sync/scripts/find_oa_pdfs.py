@@ -2,24 +2,29 @@
 """Find legal open-access PDFs for a list of DOIs. No account or API key needed.
 
 Input: any .tsv/.csv with a `doi` column (optional `record_id`, `title`), e.g.
-03-screening/included.tsv, 02-records/library.csv, or a one-column DOI list.
+03-screening/included.tsv, 02-records/library.csv, or a plain list with one
+DOI (or https://doi.org/ URL) per line.
 Lookup order per DOI: OpenAlex (free, no key) -> Unpaywall (only when
 LRS_CONTACT_EMAIL is set, because Unpaywall requires an email). Writes
-oa_check.csv with one row per input row. With --download DIR it saves each
-found OA PDF as DIR/<record_id or safe-doi>.pdf; it never overwrites a file.
+oa_check.csv with one row per input row (refuses to overwrite without --force).
+With --download DIR it saves each found OA PDF (http/https only, size-capped)
+as DIR/<record_id or doi>-<hash>.pdf; it never overwrites a file.
 Closed papers are listed as `closed` so the user can fetch them through their
 library, interlibrary loan, or the author. No shadow libraries.
-Exit 0 on success, 1 if any lookup errored (rows still written), 2 bad input.
+Exit 0 on success; 1 if a lookup errored, a DOI row stayed not_checked, or a
+download failed (rows are still written); 2 on bad input or existing output.
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -28,6 +33,15 @@ from typing import Callable, Optional, Sequence
 UA = "literature-review-skills/find_oa_pdfs"
 FIELDS = ["record_id", "doi", "title", "is_oa", "oa_status", "pdf_url",
           "landing_url", "source", "local_path", "note"]
+MAX_PDF_BYTES = 100 * 1024 * 1024
+
+
+class NotFound(Exception):
+    """The API answered HTTP 404 for this DOI."""
+
+
+class DownloadError(Exception):
+    pass
 
 
 def norm_doi(value: str) -> str:
@@ -39,8 +53,13 @@ def norm_doi(value: str) -> str:
 
 def http_json(url: str, timeout: int = 30) -> dict:
     req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            raise NotFound(url) from exc
+        raise
 
 
 def openalex(doi: str, get: Callable[[str], dict]) -> dict:
@@ -74,34 +93,46 @@ def unpaywall(doi: str, get: Callable[[str], dict]) -> Optional[dict]:
 
 def read_rows(path: Path) -> list[dict]:
     text = path.read_text(encoding="utf-8-sig")
-    first = text.splitlines()[0] if text.strip() else ""
-    if "doi" not in first.lower():  # bare DOI list, one per line
-        return [{"doi": line.strip()} for line in text.splitlines() if line.strip()]
+    lines = text.splitlines()
+    first = lines[0] if lines else ""
     delim = "\t" if "\t" in first else ","
-    rows = list(csv.DictReader(text.splitlines(), delimiter=delim))
+    header = [c.strip().strip('"').lower() for c in first.split(delim)]
+    if "doi" not in header:  # plain DOI list: every non-empty line is data
+        return [{"doi": line.strip()} for line in lines if line.strip()]
+    rows = list(csv.DictReader(lines, delimiter=delim))
     return [{(k or "").strip().lower(): (v or "") for k, v in r.items()} for r in rows]
 
 
 def safe_name(row: dict) -> str:
-    base = row.get("record_id") or row["doi"]
-    return re.sub(r"[^A-Za-z0-9._-]+", "_", base)[:120] + ".pdf"
+    """Readable stem plus a short hash of the DOI, so distinct DOIs never share a file."""
+    base = re.sub(r"[^A-Za-z0-9._-]+", "_", row.get("record_id") or row["doi"])[:100]
+    digest = hashlib.sha1(row["doi"].encode("utf-8")).hexdigest()[:8]
+    return f"{base}-{digest}.pdf"
 
 
-def download(url: str, dest: Path, timeout: int = 60) -> str:
+def download(url: str, dest: Path, timeout: int = 60, limit: int = MAX_PDF_BYTES) -> str:
+    if urllib.parse.urlsplit(url).scheme.lower() not in ("http", "https"):
+        raise DownloadError(f"refused non-http(s) URL: {url}")
     if dest.exists():
         return "exists, not overwritten"
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
-        body = resp.read()
+        final = resp.geturl() if hasattr(resp, "geturl") else url
+        if urllib.parse.urlsplit(final).scheme.lower() not in ("http", "https"):
+            raise DownloadError(f"redirected to non-http(s) URL: {final}")
+        body = resp.read(limit + 1)
+    if len(body) > limit:
+        raise DownloadError(f"larger than {limit} bytes, not saved")
     if not body.startswith(b"%PDF"):
-        return "link did not return a PDF; open landing_url in a browser"
+        raise DownloadError("link did not return a PDF; open landing_url in a browser")
     dest.write_bytes(body)
     return "saved"
 
 
 def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path] = None,
-        pause: float = 0.2) -> tuple[list[dict], int]:
-    out, errors = [], 0
+        pause: float = 0.2) -> tuple[list[dict], dict]:
+    out = []
+    stats = {"lookup_errors": 0, "not_checked": 0, "download_failed": 0}
     for row in rows:
         doi = norm_doi(row.get("doi", ""))
         rec = {k: "" for k in FIELDS}
@@ -110,14 +141,17 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
             rec.update(oa_status="not_checked", note="no DOI; search the title in Google Scholar or ask the author")
             out.append(rec)
             continue
-        hit = None
+        hit, not_found = None, 0
         for name, fn in (("openalex", openalex), ("unpaywall", unpaywall)):
             try:
                 res = fn(doi, get)
-            except Exception as exc:  # network, 404, JSON
+            except NotFound:
+                not_found += 1
+                rec["note"] = (rec["note"] + f" {name}: DOI not found").strip()
+                continue
+            except Exception as exc:  # network, 5xx, JSON
                 rec["note"] = (rec["note"] + f" {name} error: {exc}").strip()
-                if "404" not in str(exc):
-                    errors += 1
+                stats["lookup_errors"] += 1
                 continue
             if res is None:
                 continue
@@ -130,37 +164,44 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
                        oa_status=hit["oa_status"] or ("closed" if not hit["is_oa"] else ""),
                        pdf_url=hit["pdf_url"], landing_url=hit["landing_url"],
                        title=rec["title"] or hit["title"])
-        elif not rec["oa_status"]:
-            rec["oa_status"] = "not_checked"
+        else:
+            rec["oa_status"] = "not_found" if not_found and not rec["note"].count("error") else "not_checked"
+            if rec["oa_status"] == "not_checked":
+                stats["not_checked"] += 1
         if out_dir and rec["pdf_url"]:
             dest = out_dir / safe_name(rec)
             try:
                 status = fetch(rec["pdf_url"], dest)
             except Exception as exc:
                 status = f"download failed: {exc}"
+                stats["download_failed"] += 1
             if status in ("saved", "exists, not overwritten"):
                 rec["local_path"] = str(dest)
             rec["note"] = (rec["note"] + " " + status).strip()
         out.append(rec)
         time.sleep(pause)
-    return out, errors
+    return out, stats
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("input", help="TSV/CSV with a doi column, or a plain DOI list")
     ap.add_argument("-o", "--out", default="oa_check.csv")
+    ap.add_argument("--force", action="store_true", help="overwrite an existing --out file")
     ap.add_argument("--download", metavar="DIR", help="save found OA PDFs here")
     args = ap.parse_args(argv)
+    if Path(args.out).exists() and not args.force:
+        print(f"ERROR {args.out} exists; pass --force to overwrite", file=sys.stderr)
+        return 2
     try:
         rows = read_rows(Path(args.input))
-    except (OSError, UnicodeDecodeError, IndexError) as exc:
+    except (OSError, UnicodeDecodeError) as exc:
         print(f"ERROR {exc}", file=sys.stderr)
         return 2
     out_dir = Path(args.download) if args.download else None
     if out_dir:
         out_dir.mkdir(parents=True, exist_ok=True)
-    result, errors = run(rows, out_dir=out_dir)
+    result, stats = run(rows, out_dir=out_dir)
     with open(args.out, "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=FIELDS)
         w.writeheader()
@@ -168,8 +209,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     n_pdf = sum(1 for r in result if r["pdf_url"])
     n_closed = sum(1 for r in result if r["is_oa"] == "no")
     print(f"rows={len(result)} oa_pdf_found={n_pdf} closed={n_closed} "
-          f"saved={sum(1 for r in result if r['local_path'])} lookup_errors={errors} -> {args.out}")
-    return 1 if errors else 0
+          f"saved={sum(1 for r in result if r['local_path'])} "
+          + " ".join(f"{k}={v}" for k, v in stats.items()) + f" -> {args.out}")
+    return 1 if any(stats.values()) else 0
 
 
 if __name__ == "__main__":
