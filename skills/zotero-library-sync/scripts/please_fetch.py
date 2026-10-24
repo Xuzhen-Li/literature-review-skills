@@ -105,6 +105,7 @@ def build(status: list[dict], need: list[dict], uploads: Optional[Path], max_n: 
         row = {"record_id": r.get("record_id", "") or t.get("record_id", ""),
                "doi": _doi(r.get("doi") or t.get("doi", "")), "title": r.get("title", ""),
                "why": t.get("why", ""), "need": t["need"].lower(), "landing_url": r.get("landing_url", ""), "pdf_url": r.get("pdf_url", ""), "agent_reason": r.get("agent_reason", "") if r.get("agent_retry") == "failed" else "",
+               "agent_retry_method": r.get("agent_retry_method", ""),
                "_stem": upload_stem(r.get("record_id", ""), r.get("doi") or t.get("doi", ""))}
         if row["need"] == "essential":
             try:
@@ -145,7 +146,8 @@ def render_md(fetch: list[dict], n_missing_abstract: int) -> str:
         if r.get("pdf_url"):
             lines.append(f"   Open-access link that refused my download (try it in your browser first): {r['pdf_url']}")
         if r.get("agent_reason"):
-            lines.append(f"   I also tried it with my own browser/fetch tool: {r['agent_reason']}")
+            how = r.get("agent_retry_method") or "method not recorded"
+            lines.append(f"   Agent retry failed ({how}): {r['agent_reason']}")
         lines.append(f"   Save as: {r['save_as']}")
         lines.append("")
     if n_missing_abstract:

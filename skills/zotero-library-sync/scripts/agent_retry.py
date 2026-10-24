@@ -6,12 +6,13 @@ but open fine in the agent's own browser or web-fetch tool. Before anything
 goes to the human, the agent retries every such paper itself.
 
   worklist  read oa_check.csv, write agent_retry.tsv: one row per paper with no
-            local_path and a DOI, with the landing URL, every candidate OA URL
+            local_path that has a DOI, a pdf_url, or a landing_url, with the landing URL, every candidate OA URL
             (the failed pdf_url, doi.org, OpenAlex locations with
             --openalex-locations, Europe PMC / PMC copies, preprint servers,
             known publisher PDF URL patterns) and the save_as path. The agent
             opens the candidates with its own tools, saves a real PDF under
-            save_as, or fills agent_retry=failed and a reason.
+            save_as, or fills agent_retry=failed and a reason, and writes the
+            tool it used in agent_retry_method (browser, web_fetch, curl, ...).
   accept    ingest what the agent saved: a file counts only if it starts with
             %PDF-; it is copied into the PDF folder without overwriting, and
             the merged status (oa_check columns + agent_retry, agent_reason)
@@ -20,7 +21,8 @@ goes to the human, the agent retries every such paper itself.
 Only legal OA copies. Shadow libraries (BLOCKED_HOST_PARTS) are never listed.
 The agent never types a password, captcha, or second factor.
 Exit codes: 0 ok; 1 (accept) some worklist rows were neither saved nor marked
-failed, so the agent has not finished; 2 bad input or existing output without
+failed, so the agent has not finished (-o is still written; rerun
+accept with --force after finishing them); 2 bad input or existing output without
 --force.
 """
 from __future__ import annotations
@@ -39,7 +41,8 @@ import find_oa_pdfs as foa  # noqa: E402
 import please_fetch as pf  # noqa: E402
 
 WORK_FIELDS = ["record_id", "doi", "title", "landing_url", "candidate_urls", "save_as",
-               "agent_retry", "agent_reason"]
+               "agent_retry", "agent_reason", "agent_retry_method"]
+RETRY_COLS = ("agent_retry", "agent_reason", "agent_retry_method")
 RETRY_VALUES = ("got", "failed")
 
 
@@ -49,8 +52,6 @@ def publisher_patterns(doi: str) -> list[str]:
     pre, _, suf = d.partition("/")
     q = urllib.parse.quote(doi, safe="/()")
     out = []
-    if pre == "10.3390":
-        out.append(f"https://www.mdpi.com/{q}/pdf")  # resolves via doi path on mdpi
     if pre in ("10.1111", "10.1002"):
         out.append(f"https://onlinelibrary.wiley.com/doi/pdfdirect/{q}")
     if pre == "10.1073":
@@ -88,8 +89,8 @@ def openalex_locations(doi: str, get: Callable[[str], dict]) -> list[str]:
 
 def candidates(row: dict, extra: Sequence[str] = ()) -> list[str]:
     doi = foa.norm_doi(row.get("doi", ""))
-    raw = [row.get("pdf_url", ""), *extra, *publisher_patterns(doi), row.get("landing_url", ""),
-           f"https://doi.org/{doi}", *europepmc_candidates(doi)]
+    by_doi = [*publisher_patterns(doi), f"https://doi.org/{doi}", *europepmc_candidates(doi)] if doi else []
+    raw = [row.get("pdf_url", ""), *extra, *by_doi[:-2], row.get("landing_url", ""), *by_doi[-2:]]
     seen, out = set(), []
     for u in raw:
         if u and u not in seen and urllib.parse.urlsplit(u).scheme in ("http", "https") \
@@ -103,20 +104,22 @@ def worklist(status: list[dict], incoming: str, get=None) -> list[dict]:
     rows = []
     for r in status:
         doi = foa.norm_doi(r.get("doi", ""))
-        if r.get("local_path") or not doi:
+        if r.get("local_path") or not (r.get("record_id") or doi):
+            continue
+        if not (doi or r.get("pdf_url") or r.get("landing_url")):
             continue
         extra: list[str] = []
-        if get is not None:
+        if get is not None and doi:
             try:
                 extra = openalex_locations(doi, get)
             except Exception:
                 extra = []
         stem = pf.upload_stem(r.get("record_id", ""), doi)
         rows.append({"record_id": r.get("record_id", ""), "doi": doi, "title": r.get("title", ""),
-                     "landing_url": r.get("landing_url", "") or f"https://doi.org/{doi}",
+                     "landing_url": r.get("landing_url", "") or (f"https://doi.org/{doi}" if doi else ""),
                      "candidate_urls": " | ".join(candidates(r, extra)),
                      "save_as": f"{incoming.rstrip('/')}/{stem}.pdf",
-                     "agent_retry": "", "agent_reason": ""})
+                     "agent_retry": "", "agent_reason": "", "agent_retry_method": ""})
     return rows
 
 
@@ -129,12 +132,13 @@ def accept(status: list[dict], work: list[dict], incoming: Path, pdf_dir: Path):
     pdf_dir.mkdir(parents=True, exist_ok=True)
     for r in status:
         r = dict(r)
-        r.setdefault("agent_retry", "")
-        r.setdefault("agent_reason", "")
+        for k in RETRY_COLS:
+            r.setdefault(k, "")
         w = by_key.get(r.get("record_id") or foa.norm_doi(r.get("doi", "")))
         if w is None or r.get("local_path"):
             merged.append(r)
             continue
+        r["agent_retry_method"] = (w.get("agent_retry_method") or "").strip()
         src = incoming / Path(w["save_as"]).name
         said = (w.get("agent_retry") or "").strip().lower()
         if said and said not in RETRY_VALUES:
@@ -152,7 +156,9 @@ def accept(status: list[dict], work: list[dict], incoming: Path, pdf_dir: Path):
             r.update(local_path=str(dest), agent_retry="got",
                      agent_reason=w.get("agent_reason") or "saved by agent")
         elif src.exists():
-            r.update(agent_retry="failed", agent_reason="saved file is not a PDF (no %PDF- header)")
+            note = "saved file is not a PDF (no %PDF- header)"
+            mine = (w.get("agent_reason") or "").strip()
+            r.update(agent_retry="failed", agent_reason=f"{mine}; {note}" if mine else note)
         elif said == "failed":
             if not (w.get("agent_reason") or "").strip():
                 raise ValueError(f"agent_retry=failed needs a reason: {w.get('record_id') or w['doi']}")
@@ -206,14 +212,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except (OSError, ValueError) as exc:
         print(f"ERROR {exc}", file=sys.stderr)
         return 2
-    fields = list(foa.FIELDS) + [k for k in ("agent_retry", "agent_reason") if k not in foa.FIELDS]
+    fields = list(foa.FIELDS) + [k for k in RETRY_COLS if k not in foa.FIELDS]
     fields += [k for k in (merged[0] if merged else {}) if k not in fields]
     _write(args.out, fields, merged, ",")
     got = sum(1 for r in merged if r.get("agent_retry") == "got")
     failed = sum(1 for r in merged if r.get("agent_retry") == "failed")
     print(f"OK got={got} failed={failed} unfinished={len(unfinished)} -> {args.out}")
     if unfinished:
-        print("NOT DONE agent has not tried: " + ", ".join(unfinished), file=sys.stderr)
+        print("NOT DONE agent has not tried: " + ", ".join(unfinished)
+              + f" (finish them, then rerun accept with --force to replace {args.out})", file=sys.stderr)
         return 1
     return 0
 

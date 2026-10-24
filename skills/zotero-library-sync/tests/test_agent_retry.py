@@ -25,19 +25,22 @@ STATUS = [
     {"record_id": "R3", "doi": "10.1038/s41588-1", "title": "Nature", "local_path": "",
      "pdf_url": "https://sci-hub.se/x.pdf", "landing_url": ""},
     {"record_id": "R4", "doi": "", "title": "No DOI", "local_path": ""},
+    {"record_id": "R6", "doi": "", "title": "No DOI, has OA link", "local_path": "",
+     "pdf_url": "https://repo.example.edu/r6.pdf", "landing_url": ""},
     {"record_id": "R5", "doi": "10.1111/tpj.1", "title": "Wiley", "local_path": "", "pdf_url": "", "landing_url": ""},
 ]
 
 
 def test_worklist_rows_and_candidates():
     rows = ar.worklist(STATUS, "04-library/agent_pdfs")
-    assert [r["record_id"] for r in rows] == ["R2", "R3", "R5"]
+    assert [r["record_id"] for r in rows] == ["R2", "R3", "R6", "R5"]
     c2 = rows[0]["candidate_urls"].split(" | ")
     assert c2[0] == "https://www.mdpi.com/x/pdf" and "https://doi.org/10.3390/ijms1" in c2
     assert any("europepmc.org" in u for u in c2)
     c3 = rows[1]["candidate_urls"]
     assert "sci-hub" not in c3 and "https://www.nature.com/articles/s41588-1.pdf" in c3
-    assert "onlinelibrary.wiley.com/doi/pdfdirect/10.1111/tpj.1" in rows[2]["candidate_urls"]
+    assert "onlinelibrary.wiley.com/doi/pdfdirect/10.1111/tpj.1" in rows[3]["candidate_urls"]
+    assert rows[2]["candidate_urls"] == "https://repo.example.edu/r6.pdf" and rows[2]["landing_url"] == ""
     assert rows[0]["save_as"] == "04-library/agent_pdfs/R2.pdf"
     assert len(c2) == len(set(c2))
 
@@ -68,11 +71,15 @@ def test_accept_ingests_real_pdf_rejects_html_and_records_reasons(tmp_path):
     inc.mkdir()
     (inc / "R2.pdf").write_bytes(b"%PDF-1.7 body")
     (inc / "R3.pdf").write_bytes(b"<!DOCTYPE html><html>Just a moment...</html>")
-    work = _work(tmp_path, R5={"agent_retry": "failed", "agent_reason": "403 in browser too; Cloudflare check"})
+    work = _work(tmp_path, R3={"agent_reason": "browser showed a login page"},
+                 R5={"agent_retry": "failed", "agent_reason": "403 in browser too; Cloudflare check"},
+                 R6={"agent_retry": "failed", "agent_reason": "404", "agent_retry_method": "curl"})
     merged, unfinished = ar.accept(STATUS, work, inc, pdfs)
     by = {r["record_id"]: r for r in merged}
     assert by["R2"]["agent_retry"] == "got" and Path(by["R2"]["local_path"]).read_bytes().startswith(b"%PDF")
     assert by["R3"]["agent_retry"] == "failed" and "not a PDF" in by["R3"]["agent_reason"]
+    assert by["R3"]["agent_reason"].startswith("browser showed a login page; ")
+    assert by["R6"]["agent_retry_method"] == "curl"
     assert by["R5"]["agent_retry"] == "failed" and "Cloudflare" in by["R5"]["agent_reason"]
     assert by["R1"]["local_path"] == "pdfs/R1.pdf" and by["R1"]["agent_retry"] == ""
     assert unfinished == []
@@ -85,7 +92,8 @@ def test_accept_never_overwrites_existing_pdf(tmp_path):
     (pdfs / "R2.pdf").write_bytes(b"%PDF-1.4 older different file")
     (inc / "R2.pdf").write_bytes(b"%PDF-1.7 new")
     work = _work(tmp_path, R3={"agent_retry": "failed", "agent_reason": "x"},
-                 R5={"agent_retry": "failed", "agent_reason": "y"})
+                 R5={"agent_retry": "failed", "agent_reason": "y"},
+                 R6={"agent_retry": "failed", "agent_reason": "z"})
     merged, _ = ar.accept(STATUS, work, inc, pdfs)
     assert (pdfs / "R2.pdf").read_bytes() == b"%PDF-1.4 older different file"
     r2 = next(r for r in merged if r["record_id"] == "R2")
@@ -96,7 +104,7 @@ def test_accept_flags_untried_and_bad_marks(tmp_path):
     inc = tmp_path / "in"
     inc.mkdir()
     merged, unfinished = ar.accept(STATUS, _work(tmp_path), inc, tmp_path / "pdfs")
-    assert unfinished == ["R2", "R3", "R5"]
+    assert unfinished == ["R2", "R3", "R6", "R5"]
     with pytest.raises(ValueError, match="needs a reason"):
         ar.accept(STATUS, _work(tmp_path, R2={"agent_retry": "failed"}), inc, tmp_path / "pdfs")
     with pytest.raises(ValueError, match="got or failed"):
@@ -110,15 +118,22 @@ def test_only_essential_still_missing_after_retry_reach_please_fetch(tmp_path):
     inc.mkdir()
     (inc / "R2.pdf").write_bytes(b"%PDF-1.7")
     work = _work(tmp_path, R3={"agent_retry": "failed", "agent_reason": "publisher 403 in browser"},
-                 R5={"agent_retry": "failed", "agent_reason": "no OA copy"})
+                 R5={"agent_retry": "failed", "agent_reason": "no OA copy"},
+                 R6={"agent_retry": "failed", "agent_reason": "404"})
+    for w in work:
+        if w["record_id"] == "R3":
+            w["agent_retry_method"] = "curl"
     merged, _ = ar.accept(STATUS, work, inc, tmp_path / "pdfs")
     need = [{"record_id": "R2", "need": "essential", "why": "core", "rank": "1"},
             {"record_id": "R3", "need": "essential", "why": "core", "rank": "2"},
             {"record_id": "R4", "need": "abstract_ok", "why": "", "rank": ""},
+            {"record_id": "R6", "need": "abstract_ok", "why": "", "rank": ""},
             {"record_id": "R5", "need": "useful", "why": "extra", "rank": ""}]
     fetch, abstract, untriaged, _ = pf.build(merged, need, None, 15)
     assert [r["record_id"] for r in fetch] == ["R3"] and not untriaged
-    assert "publisher 403 in browser" in pf.render_md(fetch, len(abstract))
+    md = pf.render_md(fetch, len(abstract))
+    assert "Agent retry failed (curl): publisher 403 in browser" in md
+    assert "my own browser" not in md
 
 
 def test_main_roundtrip_and_no_overwrite(tmp_path):
@@ -137,6 +152,7 @@ def test_main_roundtrip_and_no_overwrite(tmp_path):
     assert ar.main(args) == 1  # nothing tried yet
     assert "agent_retry" in out.read_text().splitlines()[0]
     assert ar.main(args) == 2  # refuses to overwrite
+    assert ar.main(args + ["--force"]) == 1  # documented rerun after exit 1
 
 
 def test_polite_user_agent(monkeypatch):
@@ -151,3 +167,38 @@ def test_empty_http_reason_not_shown():
     e = urllib.error.HTTPError("u", 503, "", {}, io.BytesIO(b""))
     assert foa.err_text(e) == "HTTP 503"
     assert foa.err_text(urllib.error.HTTPError("u", 403, "Forbidden", {}, io.BytesIO(b""))) == "HTTP 403 Forbidden"
+
+
+def test_second_layer_no_overwrite_of_agent_copy(tmp_path):
+    inc, pdfs = tmp_path / "in", tmp_path / "pdfs"
+    inc.mkdir()
+    pdfs.mkdir()
+    (pdfs / "R2.pdf").write_bytes(b"%PDF-1.4 A")
+    (pdfs / "R2-agent.pdf").write_bytes(b"%PDF-1.4 B")
+    (inc / "R2.pdf").write_bytes(b"%PDF-1.7 C")
+    with pytest.raises(ValueError, match="not overwriting"):
+        ar.accept(STATUS, _work(tmp_path), inc, pdfs)
+    assert (pdfs / "R2.pdf").read_bytes() == b"%PDF-1.4 A"
+    assert (pdfs / "R2-agent.pdf").read_bytes() == b"%PDF-1.4 B"
+
+
+def test_worklist_keeps_only_http_https_candidates():
+    def get(url):
+        return {"locations": [{"is_oa": True, "pdf_url": "ftp://ftp.example.org/x.pdf",
+                               "landing_page_url": "javascript:alert(1)"},
+                              {"is_oa": True, "pdf_url": "http://repo.example.edu/2.pdf"}]}
+    row = dict(STATUS[1], pdf_url="file:///etc/passwd")
+    c = ar.worklist([row], "in", get=get)[0]["candidate_urls"].split(" | ")
+    assert "http://repo.example.edu/2.pdf" in c
+    assert all(u.split(":", 1)[0] in ("http", "https") for u in c)
+
+
+def test_worklist_survives_openalex_error():
+    def get(url):
+        raise OSError("HTTP 503")
+    rows = ar.worklist(STATUS[1:2], "in", get=get)
+    assert len(rows) == 1 and "https://www.mdpi.com/x/pdf" in rows[0]["candidate_urls"]
+
+
+def test_no_unverified_mdpi_pattern():
+    assert ar.publisher_patterns("10.3390/ijms1") == []
