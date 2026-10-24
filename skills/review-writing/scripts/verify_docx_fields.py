@@ -161,7 +161,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         cur = scan(args.docx)
         base = scan(args.baseline) if args.baseline else None
-    except (OSError, zipfile.BadZipFile, ValueError, ET.ParseError, Exception) as exc:
+    except (OSError, zipfile.BadZipFile, ValueError, ET.ParseError, KeyError, UnicodeDecodeError) as exc:
+        # input/parse problems only (defusedxml errors subclass ValueError); code bugs propagate
         print(f"ERROR {exc}", file=sys.stderr)
         return 2
     fails, warns = [], []

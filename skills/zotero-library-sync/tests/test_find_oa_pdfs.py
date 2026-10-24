@@ -70,6 +70,13 @@ def test_colliding_dois_get_distinct_files():
     assert f.safe_name({"doi": "10.1/a:b", "record_id": "R1"}) != f.safe_name({"doi": "10.1/a/b", "record_id": "R1"})
 
 
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    def boom(*a, **k):
+        raise AssertionError("real network access in test")
+    monkeypatch.setattr(f.urllib.request, "urlopen", boom)
+
+
 @pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://x/a.pdf", "data:application/pdf,%PDF"])
 def test_non_http_urls_refused(tmp_path, url):
     with pytest.raises(f.DownloadError):
@@ -98,3 +105,83 @@ def test_out_refuses_overwrite_without_force(tmp_path):
     assert f.main([str(inp), "-o", str(out)]) == 2
     assert out.read_text() == "keep"
     assert f.main([str(inp), "-o", str(out), "--force"]) == 0
+
+
+# ---- stubbed urlopen: no real network in any test below ----
+import io
+import urllib.error
+
+
+class FakeResp(io.BytesIO):
+    def __init__(self, body, final_url):
+        super().__init__(body)
+        self._url = final_url
+
+    def geturl(self):
+        return self._url
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        self.close()
+
+
+@pytest.fixture
+def stub_urlopen(monkeypatch):
+    calls = []
+
+    def install(handler):
+        def fake(req, timeout=None):
+            url = req.full_url if hasattr(req, "full_url") else req
+            calls.append(url)
+            return handler(url)
+        monkeypatch.setattr(f.urllib.request, "urlopen", fake)
+        return calls
+    return install
+
+
+def test_redirect_to_non_http_refused(tmp_path, stub_urlopen):
+    stub_urlopen(lambda u: FakeResp(b"%PDF-1.4 x", "file:///etc/passwd"))
+    with pytest.raises(f.DownloadError, match="redirected"):
+        f.download("https://x/a.pdf", tmp_path / "a.pdf")
+    assert not (tmp_path / "a.pdf").exists()
+
+
+def test_size_cap(tmp_path, stub_urlopen):
+    stub_urlopen(lambda u: FakeResp(b"%PDF" + b"0" * 20, "https://x/a.pdf"))
+    with pytest.raises(f.DownloadError, match="larger than"):
+        f.download("https://x/a.pdf", tmp_path / "a.pdf", limit=10)
+    assert not (tmp_path / "a.pdf").exists()
+    assert f.download("https://x/a.pdf", tmp_path / "b.pdf", limit=100) == "saved"
+
+
+def test_404_by_status_code(stub_urlopen):
+    def h(u):
+        raise urllib.error.HTTPError(u, 404, "Gone Away", {}, None)  # no "404" in msg
+    stub_urlopen(h)
+    with pytest.raises(f.NotFound):
+        f.http_json("https://api.openalex.org/works/doi:10.1/x")
+
+
+def test_500_is_not_not_found(stub_urlopen):
+    def h(u):
+        raise urllib.error.HTTPError(u, 500, "404 mentioned", {}, None)
+    stub_urlopen(h)
+    with pytest.raises(urllib.error.HTTPError):
+        f.http_json("https://api.openalex.org/works/doi:10.1/x")
+
+
+@pytest.mark.parametrize("url", ["ftp://x/a.pdf", "file:///etc/passwd"])
+def test_bad_scheme_never_opens(tmp_path, stub_urlopen, url):
+    calls = stub_urlopen(lambda u: FakeResp(b"%PDF", u))
+    with pytest.raises(f.DownloadError):
+        f.download(url, tmp_path / "a.pdf")
+    assert calls == []
+
+
+def test_not_found_status_is_structured():
+    def g(url):
+        raise f.NotFound(url)
+    out, stats = f.run([{"doi": "10.1/error-in-doi"}], get=g, pause=0)
+    assert out[0]["oa_status"] == "not_found" and stats["not_checked"] == 0

@@ -141,7 +141,7 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
             rec.update(oa_status="not_checked", note="no DOI; search the title in Google Scholar or ask the author")
             out.append(rec)
             continue
-        hit, not_found = None, 0
+        hit, not_found, errored = None, 0, False
         for name, fn in (("openalex", openalex), ("unpaywall", unpaywall)):
             try:
                 res = fn(doi, get)
@@ -152,6 +152,7 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
             except Exception as exc:  # network, 5xx, JSON
                 rec["note"] = (rec["note"] + f" {name} error: {exc}").strip()
                 stats["lookup_errors"] += 1
+                errored = True
                 continue
             if res is None:
                 continue
@@ -165,7 +166,7 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
                        pdf_url=hit["pdf_url"], landing_url=hit["landing_url"],
                        title=rec["title"] or hit["title"])
         else:
-            rec["oa_status"] = "not_found" if not_found and not rec["note"].count("error") else "not_checked"
+            rec["oa_status"] = "not_found" if not_found and not errored else "not_checked"
             if rec["oa_status"] == "not_checked":
                 stats["not_checked"] += 1
         if out_dir and rec["pdf_url"]:
