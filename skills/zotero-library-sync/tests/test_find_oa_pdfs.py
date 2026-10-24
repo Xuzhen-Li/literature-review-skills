@@ -185,3 +185,60 @@ def test_not_found_status_is_structured():
         raise f.NotFound(url)
     out, stats = f.run([{"doi": "10.1/error-in-doi"}], get=g, pause=0)
     assert out[0]["oa_status"] == "not_found" and stats["not_checked"] == 0
+
+
+class SizedResp(FakeResp):
+    def __init__(self, body, final_url):
+        super().__init__(body, final_url)
+        self.asked = []
+
+    def read(self, n=-1):
+        self.asked.append(n)
+        return super().read(n)
+
+
+def test_read_is_bounded(tmp_path, stub_urlopen):
+    resp = SizedResp(b"%PDF" + b"0" * 50, "https://x/a.pdf")
+    stub_urlopen(lambda u: resp)
+    with pytest.raises(f.DownloadError):
+        f.download("https://x/a.pdf", tmp_path / "a.pdf", limit=10)
+    assert resp.asked == [11]  # never an unbounded read()
+
+
+def _mixed(oa_exc, up_exc):
+    def get(url):
+        raise (oa_exc if "openalex" in url else up_exc)(url)
+    return get
+
+
+@pytest.mark.parametrize("oa_exc,up_exc", [(RuntimeError, f.NotFound), (f.NotFound, RuntimeError)])
+def test_error_plus_404_is_not_checked(monkeypatch, oa_exc, up_exc):
+    monkeypatch.setenv("LRS_CONTACT_EMAIL", "me@example.org")
+    out, stats = f.run([{"doi": "10.1/mixed"}], get=_mixed(oa_exc, up_exc), pause=0)
+    assert out[0]["oa_status"] == "not_checked"
+    assert stats["lookup_errors"] == 1 and stats["not_checked"] == 1
+
+
+def test_both_404_is_not_found(monkeypatch):
+    monkeypatch.setenv("LRS_CONTACT_EMAIL", "me@example.org")
+    out, stats = f.run([{"doi": "10.1/x"}], get=_mixed(f.NotFound, f.NotFound), pause=0)
+    assert out[0]["oa_status"] == "not_found" and stats["not_checked"] == 0
+
+
+def test_non_pdf_body_refused(tmp_path, stub_urlopen):
+    stub_urlopen(lambda u: FakeResp(b"<html>login</html>", "https://x/a.pdf"))
+    with pytest.raises(f.DownloadError, match="did not return a PDF"):
+        f.download("https://x/a.pdf", tmp_path / "a.pdf")
+    assert not (tmp_path / "a.pdf").exists()
+
+
+def test_main_exit_1_on_not_checked(tmp_path, monkeypatch):
+    def boom(doi, get):
+        raise RuntimeError("offline")
+    monkeypatch.setattr(f, "openalex", boom)
+    monkeypatch.setattr(f.time, "sleep", lambda s: None)
+    inp = tmp_path / "d.txt"
+    inp.write_text("10.1/a\n")
+    out = tmp_path / "oa.csv"
+    assert f.main([str(inp), "-o", str(out)]) == 1
+    assert "not_checked" in out.read_text()

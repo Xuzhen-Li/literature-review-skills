@@ -141,6 +141,8 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
             rec.update(oa_status="not_checked", note="no DOI; search the title in Google Scholar or ask the author")
             out.append(rec)
             continue
+        # Status comes from not_found/errored only. Never concatenate external text
+        # (API messages, titles) into note before the status decision below.
         hit, not_found, errored = None, 0, False
         for name, fn in (("openalex", openalex), ("unpaywall", unpaywall)):
             try:
