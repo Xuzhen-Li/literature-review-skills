@@ -212,3 +212,56 @@ def test_truncation_and_failure_exit_1(tmp_path, monkeypatch):
                                   ["--query", "q"]])
 def test_bad_args(argv):
     assert a.main(argv) == 2
+
+
+@pytest.mark.parametrize("q,want", [
+    ("grapevine pan-genome", "all:grapevine AND all:pan-genome"),
+    ('"structural variation" grapevine', 'all:"structural variation" AND all:grapevine'),
+    ("ti:grape AND abs:genome", "ti:grape AND abs:genome"),
+    ("grape OR vine", "grape OR vine"),
+])
+def test_arxiv_plain_words_are_anded(q, want):
+    assert a.arxiv_query(q) == want
+
+
+def test_arxiv_url_uses_anded_query():
+    seen = []
+
+    def get(u, h=None):
+        seen.append(u)
+        return fake_get()(u, h)
+    a.src_arxiv("grapevine pangenome", 5, get)
+    assert qs(seen[0])["search_query"] == "all:grapevine AND all:pangenome"
+
+
+def test_europepmc_page_size_follows_max():
+    seen = []
+
+    def get(u, h=None):
+        seen.append(u)
+        return fake_get()(u, h)
+    a.src_europepmc("q", 30, get)
+    assert qs(seen[0])["pageSize"] == "30"
+
+
+def test_http_error_message_includes_api_detail(monkeypatch):
+    import io
+    import urllib.error
+    body = io.BytesIO(b'{"errCode":503,"errMsg":"Search service is temporarily unavailable."}')
+    err = urllib.error.HTTPError("https://www.ebi.ac.uk/x", 503, "x", {}, body)
+
+    def raise_err(*x, **k):
+        raise err
+    monkeypatch.setattr(a.urllib.request, "urlopen", raise_err)
+    with pytest.raises(a.SourceError, match="temporarily unavailable"):
+        a.http_get("https://www.ebi.ac.uk/x", sleep=lambda s: None)
+
+
+def test_hit_counts_keeps_existing_comma_header(tmp_path, monkeypatch):
+    monkeypatch.setattr(a, "http_get", lambda u, h=None: fake_get()(u, h))
+    hc = tmp_path / "hit_counts.tsv"
+    hc.write_text("database,interface,date,count,notes\n", encoding="utf-8")
+    assert a.main(["--query", "q", "--sources", "pubmed", "--out-dir", str(tmp_path / "raw"),
+                   "--hit-counts", str(hc), "--date", "20261024"]) == 0
+    rows = list(csv.reader(hc.open()))
+    assert rows[1][:4] == ["pubmed", "NCBI E-utilities", "2026-10-24", "1"]

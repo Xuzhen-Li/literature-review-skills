@@ -86,7 +86,15 @@ def http_get(url: str, headers: Optional[dict] = None, timeout: int = 60,
             if exc.code in (429, 503) and attempt == 1:
                 sleep(5)
                 continue
-            raise SourceError(f"HTTP {exc.code} from {urllib.parse.urlsplit(url).netloc}") from exc
+            msg = f"HTTP {exc.code} from {urllib.parse.urlsplit(url).netloc}"
+            try:
+                body = json.loads(exc.read().decode("utf-8", "replace"))
+                detail = body.get("errMsg") or body.get("message") or body.get("error")
+                if isinstance(detail, str) and detail:
+                    msg += f" ({detail[:150]})"
+            except Exception:
+                pass
+            raise SourceError(msg) from exc
         except (urllib.error.URLError, OSError) as exc:
             raise SourceError(f"network error: {exc}") from exc
     raise SourceError("unreachable")
@@ -157,7 +165,7 @@ def src_europepmc(query, max_n, get, count_only=False):
     while True:
         url = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?" + _q({
             "query": query, "format": "json", "resultType": "core",
-            "pageSize": 1 if count_only else 1000, "cursorMark": cursor})
+            "pageSize": 1 if count_only else max(1, min(1000, max_n)), "cursorMark": cursor})
         data = _json(get, url)
         total = int(data.get("hitCount") or 0)
         if count_only:
@@ -244,11 +252,20 @@ OS_NS = "{http://a9.com/-/spec/opensearch/1.1/}"
 ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 
 
+def arxiv_query(query: str) -> str:
+    """arXiv ORs bare words ('all:a b' matches a OR b), so AND plain terms."""
+    q = query.strip()
+    if ":" in q or re.search(r"\b(AND|OR|ANDNOT)\b", q):
+        return q
+    terms = re.findall(r'"[^"]+"|\S+', q)
+    return " AND ".join(f"all:{t}" for t in terms)
+
+
 def src_arxiv(query, max_n, get, count_only=False):
     out, start, total = [], 0, 0
     while True:
         url = "https://export.arxiv.org/api/query?" + _q({
-            "search_query": query if ":" in query else f"all:{query}", "start": start,
+            "search_query": arxiv_query(query), "start": start,
             "max_results": 1 if count_only else min(500, max_n)})
         root = xml_fromstring(get(url, None))
         total = int(root.findtext(OS_NS + "totalResults") or 0)
@@ -372,7 +389,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         hc = Path(args.hit_counts)
         new = not hc.exists() or hc.stat().st_size == 0
         with open(hc, "a", newline="", encoding="utf-8") as fh:
-            w = csv.writer(fh, delimiter="\t")
+            delim = "\t"
+            if not new:  # keep whatever delimiter the existing header uses
+                with open(hc, encoding="utf-8") as rh:
+                    first = rh.readline()
+                if "\t" not in first and "," in first:
+                    delim = ","
+            w = csv.writer(fh, delimiter=delim)
             if new:
                 w.writerow(["database", "interface", "date", "count", "notes"])
             w.writerows(rows)
