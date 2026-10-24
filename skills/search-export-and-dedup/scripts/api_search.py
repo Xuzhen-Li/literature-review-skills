@@ -52,7 +52,7 @@ except ImportError:  # API responses carry no DOCTYPE; refuse one if present
             raise ValueError("XML declares a DOCTYPE/ENTITY; refusing to parse")
         return _ET.fromstring(data)
 
-UA = "literature-review-skills/api_search"
+UA = "literature-review-skills/api_search (+https://github.com/Xuzhen-Li/literature-review-skills)"
 FIELDS = ["title", "year", "authors", "journal", "doi", "pmid", "abstract", "pdf_url", "source_id"]
 DEFAULT_SOURCES = ["openalex", "europepmc", "pubmed", "semanticscholar", "arxiv"]
 ALL_SOURCES = DEFAULT_SOURCES + ["crossref"]
@@ -76,7 +76,8 @@ class SourceError(Exception):
 def http_get(url: str, headers: Optional[dict] = None, timeout: int = 60,
              sleep: Callable[[float], None] = time.sleep) -> bytes:
     """GET with one retry on 429/503. Raises SourceError on failure."""
-    h = {"User-Agent": UA}
+    mail = os.environ.get("LRS_CONTACT_EMAIL", "")
+    h = {"User-Agent": UA[:-1] + f"; mailto:{mail})" if mail else UA}  # identifying, never a browser UA
     h.update(headers or {})
     for attempt in (1, 2):
         try:

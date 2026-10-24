@@ -33,7 +33,22 @@ import urllib.request
 from pathlib import Path
 from typing import Callable, Optional, Sequence
 
-UA = "literature-review-skills/find_oa_pdfs"
+UA_BASE = "literature-review-skills/find_oa_pdfs (+https://github.com/Xuzhen-Li/literature-review-skills)"
+
+
+def user_agent() -> str:
+    """Polite, identifying UA (never a browser string); adds mailto when LRS_CONTACT_EMAIL is set."""
+    mail = os.environ.get("LRS_CONTACT_EMAIL", "")
+    return UA_BASE[:-1] + f"; mailto:{mail})" if mail else UA_BASE
+
+
+def err_text(exc: Exception) -> str:
+    """Readable error without the empty trailing reason urllib gives ('HTTP Error 503: ')."""
+    code = getattr(exc, "code", None)
+    if code is not None:
+        reason = str(getattr(exc, "reason", "") or "").strip()
+        return f"HTTP {code}" + (f" {reason}" if reason else "")
+    return str(exc).strip() or type(exc).__name__
 FIELDS = ["record_id", "doi", "title", "is_oa", "oa_status", "pdf_url",
           "landing_url", "source", "local_path", "note"]
 MAX_PDF_BYTES = 100 * 1024 * 1024
@@ -70,7 +85,7 @@ def norm_doi(value: str) -> str:
 
 
 def request_headers(url: str) -> dict:
-    headers = {"User-Agent": UA}
+    headers = {"User-Agent": user_agent()}
     key = os.environ.get("S2_API_KEY", "")
     if key and urllib.parse.urlsplit(url).hostname == "api.semanticscholar.org":
         headers["x-api-key"] = key
@@ -184,7 +199,7 @@ def download(url: str, dest: Path, timeout: int = 60, limit: int = MAX_PDF_BYTES
         raise DownloadError(f"refused blocked host: {url}")
     if dest.exists():
         return "exists, not overwritten"
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    req = urllib.request.Request(url, headers={"User-Agent": user_agent()})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         final = resp.geturl() if hasattr(resp, "geturl") else url
         if urllib.parse.urlsplit(final).scheme.lower() not in ("http", "https"):
@@ -227,7 +242,7 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
                 rec["note"] = (rec["note"] + f" {name}: DOI not found").strip()
                 continue
             except Exception as exc:  # network, 5xx, JSON
-                rec["note"] = (rec["note"] + f" {name} error: {exc}").strip()
+                rec["note"] = (rec["note"] + f" {name} error: {err_text(exc)}").strip()
                 stats["lookup_errors"] += 1
                 errored = True
                 continue
@@ -249,7 +264,7 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
             try:
                 status = fetch(res["pdf_url"], dest)
             except Exception as exc:
-                status = f"download failed: {exc}"
+                status = f"download failed: {err_text(exc)}"
             if status in ("saved", "exists, not overwritten"):
                 hit, rec["source"], rec["local_path"], saved = res, name, str(dest), True
                 rec["note"] = (rec["note"] + " " + status).strip()

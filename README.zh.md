@@ -75,7 +75,7 @@ flowchart TD
 | 3 | `search-strategy-builder` | 将 PICO、PEO 或 SPIDER 概念转化为同义词、MeSH 词表及字段标签；为免费 API（OpenAlex、Europe PMC、PubMed、Semantic Scholar、arXiv）生成检索式，仅在启用时加入 Web of Science 或 Scopus；由 agent 自己运行并记录命中数；PRISMA-S 报告块。人工节点：锁定检索式。当命中数量极端时，可选用宽泛、适中和严格的检索式；锁定其中一个检索式。 |
 | 4 | `search-export-and-dedup` | 用免费 API（`api_search.py`）运行已锁定的检索式，每个来源保存一个 CSV。用户可自行补充订阅数据库的导出文件。随后合并去重，写入 PRISMA 文献识别数量。 |
 | 5 | `literature-screening` | 执行纳入和排除标准，进行标题/摘要和全文筛选并附带原因，可选 Cohen's kappa，以及提供 PRISMA 2020 流程数据。叙述性综述则保留用户确认的核心文献，并将其余文献记录为未阅读。 |
-| 6 | `zotero-library-sync` | 下载合法的开放获取 PDF（`find_oa_pdfs.py`），对未拿到全文的文献分级，只把必需读全文的文献整理成排好序的 `please_fetch.md` 清单交给用户。阅读进度不等待文件上传。Zotero 导入和分类为可选项。不使用影子图书馆。仅在用户提出要求后才导出笔记。 |
+| 6 | `zotero-library-sync` | 下载合法的开放获取 PDF（`find_oa_pdfs.py`），对脚本没下载到的文献由 agent 用自己的浏览器或网页抓取工具逐篇重试（`agent_retry.py`），再对仍未拿到全文的文献分级，只把必需读全文的文献整理成排好序的 `please_fetch.md` 清单交给用户。阅读进度不等待文件上传。Zotero 导入和分类为可选项。不使用影子图书馆。仅在用户提出要求后才导出笔记。 |
 | 7 | `paper-deep-reading` | 撰写单篇文献笔记和证据表行数据。仅使用附带页码的简短原文引用。 |
 | 8 | `exemplar-review-analysis` | 阅读 3-5 篇用户可以打开的近期综述并撰写样式简报。锁定期刊后，根据锁定期刊的综述更新该简报。 |
 | 9 | `review-outline-builder` | 创建主题大纲，包含各节论点、证据 ID、计划图表和字数预算，包括局限性和下一步研究问题。系统性综述还会获得注册提醒和偏倚工具检查清单。人工节点：锁定大纲。 |

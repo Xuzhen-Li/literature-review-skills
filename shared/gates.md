@@ -134,7 +134,7 @@ Before any lock question, the owning skill may show a decision card. The card ha
 | Screening | `03-screening/criteria.md`, `03-screening/screening.csv`, `03-screening/prisma_flow.md` |
 | Narrative core | `03-screening/narrative_rank.tsv`, `03-screening/core_decision.tsv`, `03-screening/not_read.tsv`, `03-screening/cap_overflow.tsv` |
 | Included set | `03-screening/included.tsv` |
-| PDFs | `04-library/oa_check.csv`, `04-library/pdfs/`, `04-library/pdf_status.csv`, `04-library/fulltext_need.tsv`, `04-library/please_fetch.md`, `04-library/abstract_only.tsv`, and the user's files in `04-library/uploads/` |
+| PDFs | `04-library/oa_check.csv`, `04-library/pdfs/`, `04-library/agent_retry.tsv`, `04-library/oa_after_retry.csv`, `04-library/pdf_status.csv`, `04-library/fulltext_need.tsv`, `04-library/please_fetch.md`, `04-library/abstract_only.tsv`, and the user's files in `04-library/uploads/` |
 | Collections (optional, `use_zotero: true`) | `04-library/collection_checklist.tsv` |
 | Note export | `04-library/note_attachment_log.tsv` (only after the user asks) |
 | Notes | `05-reading/<citation_key>.md` |
