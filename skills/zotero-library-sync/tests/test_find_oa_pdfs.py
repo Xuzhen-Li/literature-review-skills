@@ -338,3 +338,75 @@ def test_all_downloads_fail_counts_once(tmp_path, all_lookups):
     out, stats = f.run([{"doi": "10.1/z"}], get=get, fetch=fetch, out_dir=tmp_path, pause=0)
     assert stats["download_failed"] == 1 and not out[0]["local_path"]
     assert out[0]["note"].count("blocked") == 2  # duplicate URL tried once
+
+
+def test_rerun_counts_existing_pdf_as_saved(tmp_path):
+    """Second run: the PDF is already on disk, so local_path must be filled and
+    please_fetch must not ask the user for it."""
+    import please_fetch as pf
+    rows = [{"record_id": "R0001", "doi": "10.1/open", "title": "Open"}]
+    first, _ = f.run(rows, get=fake_get, fetch=lambda u, d: (d.write_bytes(b"%PDF-1.4"), "saved")[1],
+                     out_dir=tmp_path, pause=0)
+    calls = []
+    second, stats = f.run(rows, get=fake_get, fetch=lambda u, d: calls.append(u) or f.download(u, d),
+                          out_dir=tmp_path, pause=0)
+    assert calls == ["https://x/open.pdf"]  # the real download() short-circuits on the existing file
+    assert second[0]["local_path"] == first[0]["local_path"] != ""
+    assert "exists, not overwritten" in second[0]["note"]
+    assert stats["download_failed"] == 0
+    need = [{"record_id": "R0001", "doi": "10.1/open", "need": "essential", "why": "core", "rank": "1"}]
+    fetch, abstract, untriaged, _ = pf.build(second, need, None, 15)
+    assert fetch == [] and abstract == [] and untriaged == []
+
+
+@pytest.mark.parametrize("url", ["https://sci-hub.se/10.1/x", "https://www.researchgate.net/x.pdf",
+                                 "http://libgen.rs/a.pdf"])
+def test_blocked_host_refused_before_connect(tmp_path, url):
+    with pytest.raises(f.DownloadError, match="blocked host"):
+        f.download(url, tmp_path / "a.pdf")
+
+
+def test_redirect_to_blocked_host_refused(tmp_path, stub_urlopen):
+    stub_urlopen(lambda u: FakeResp(b"%PDF-1.4 x", "https://sci-hub.se/a.pdf"))
+    with pytest.raises(f.DownloadError, match="blocked host"):
+        f.download("https://x/a.pdf", tmp_path / "a.pdf")
+    assert not (tmp_path / "a.pdf").exists()
+
+
+def test_api_link_to_blocked_host_is_dropped(tmp_path):
+    def get(url):
+        return {"title": "T", "open_access": {"is_oa": True, "oa_status": "green"},
+                "best_oa_location": {"pdf_url": "https://sci-hub.se/x.pdf"}}
+    fetched = []
+    out, _ = f.run([{"record_id": "R1", "doi": "10.1/x"}], get=get,
+                   fetch=lambda u, d: fetched.append(u) or "saved", out_dir=tmp_path, pause=0)
+    assert fetched == [] and out[0]["pdf_url"] == "" and "blocked host" in out[0]["note"]
+
+
+def test_blocklist_shared_with_route_permission():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "figure-permissions" / "scripts"))
+    try:
+        import route_permission
+    finally:
+        sys.path.pop(0)
+    assert f.BLOCKED_HOST_PARTS is route_permission.BLOCKED_HOST_PARTS
+
+
+def test_s2_key_sent_only_to_semanticscholar(monkeypatch):
+    monkeypatch.setenv("S2_API_KEY", "k")
+    assert f.request_headers("https://api.semanticscholar.org/graph/v1/paper/DOI:10.1/x")["x-api-key"] == "k"
+    assert "x-api-key" not in f.request_headers("https://api.openalex.org/works/doi:10.1/x")
+    monkeypatch.delenv("S2_API_KEY")
+    assert "x-api-key" not in f.request_headers("https://api.semanticscholar.org/graph/v1/paper/x")
+
+
+def test_http_json_sends_s2_key(monkeypatch, stub_urlopen):
+    seen = []
+
+    def fake(req, timeout=None):
+        seen.append(req.get_header("X-api-key"))
+        return FakeResp(b"{}", req.full_url)
+    monkeypatch.setattr(f.urllib.request, "urlopen", fake)
+    monkeypatch.setenv("S2_API_KEY", "k")
+    f.http_json("https://api.semanticscholar.org/graph/v1/paper/DOI:10.1/x")
+    assert seen == ["k"]

@@ -38,6 +38,21 @@ FIELDS = ["record_id", "doi", "title", "is_oa", "oa_status", "pdf_url",
           "landing_url", "source", "local_path", "note"]
 MAX_PDF_BYTES = 100 * 1024 * 1024
 
+# Shadow libraries and login-walled sharing sites are never used, even when an
+# API returns a link there. One list for the suite: figure-permissions owns it.
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "figure-permissions" / "scripts"))
+    from route_permission import BLOCKED_HOST_PARTS  # type: ignore
+except Exception:  # skill copied on its own
+    BLOCKED_HOST_PARTS = ("sci-hub", "libgen", "researchgate.net", "academia.edu")
+finally:
+    sys.path.pop(0)
+
+
+def blocked_host(url: str) -> bool:
+    host = (urllib.parse.urlsplit(url).hostname or "").lower()
+    return any(part in host for part in BLOCKED_HOST_PARTS)
+
 
 class NotFound(Exception):
     """The API answered HTTP 404 for this DOI."""
@@ -54,8 +69,16 @@ def norm_doi(value: str) -> str:
     return v.strip().lower()
 
 
+def request_headers(url: str) -> dict:
+    headers = {"User-Agent": UA}
+    key = os.environ.get("S2_API_KEY", "")
+    if key and urllib.parse.urlsplit(url).hostname == "api.semanticscholar.org":
+        headers["x-api-key"] = key
+    return headers
+
+
 def http_json(url: str, timeout: int = 30) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    req = urllib.request.Request(url, headers=request_headers(url))
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
@@ -110,7 +133,7 @@ def europepmc(doi: str, get: Callable[[str], dict]) -> Optional[dict]:
 
 
 def semanticscholar(doi: str, get: Callable[[str], dict]) -> Optional[dict]:
-    # S2_API_KEY is optional; the shared keyless pool is rate-limited but works.
+    # S2_API_KEY is optional (sent as x-api-key by http_json); the keyless pool is rate-limited but works.
     data = get("https://api.semanticscholar.org/graph/v1/paper/DOI:" + urllib.parse.quote(doi, safe="/")
                + "?fields=title,isOpenAccess,openAccessPdf")
     pdf = (data.get("openAccessPdf") or {}).get("url") or ""
@@ -157,6 +180,8 @@ def safe_name(row: dict) -> str:
 def download(url: str, dest: Path, timeout: int = 60, limit: int = MAX_PDF_BYTES) -> str:
     if urllib.parse.urlsplit(url).scheme.lower() not in ("http", "https"):
         raise DownloadError(f"refused non-http(s) URL: {url}")
+    if blocked_host(url):
+        raise DownloadError(f"refused blocked host: {url}")
     if dest.exists():
         return "exists, not overwritten"
     req = urllib.request.Request(url, headers={"User-Agent": UA})
@@ -164,6 +189,8 @@ def download(url: str, dest: Path, timeout: int = 60, limit: int = MAX_PDF_BYTES
         final = resp.geturl() if hasattr(resp, "geturl") else url
         if urllib.parse.urlsplit(final).scheme.lower() not in ("http", "https"):
             raise DownloadError(f"redirected to non-http(s) URL: {final}")
+        if blocked_host(final):
+            raise DownloadError(f"redirected to blocked host: {final}")
         body = resp.read(limit + 1)
     if len(body) > limit:
         raise DownloadError(f"larger than {limit} bytes, not saved")
@@ -206,6 +233,9 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
                 continue
             if res is None:
                 continue
+            if res["pdf_url"] and blocked_host(res["pdf_url"]):
+                rec["note"] = (rec["note"] + f" {name}: blocked host link ignored").strip()
+                res = dict(res, pdf_url="")
             if hit is None or (res["pdf_url"] and not hit["pdf_url"]):
                 hit, rec["source"] = res, name
             if not res["pdf_url"]:

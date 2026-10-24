@@ -200,7 +200,10 @@ def src_pubmed(query, max_n, get, count_only=False):
     out = []
     if count_only:
         return total, []
+    gap = 0.15 if extra["api_key"] else 0.4  # NCBI: 3 req/s without a key, 10 with one
     for i in range(0, len(ids), 200):
+        if i:
+            SLEEP(gap)
         root = xml_fromstring(get(base + "efetch.fcgi?" + _q({"db": "pubmed", "id": ",".join(ids[i:i + 200]),
                                                                "retmode": "xml", **extra}), None))
         for art in root.iter("PubmedArticle"):
@@ -245,6 +248,7 @@ def src_semanticscholar(query, max_n, get, count_only=False):
         token = data.get("token")
         if not res or not token or len(out) >= min(max_n, total):
             return total, out[:max_n]
+        SLEEP(1)  # keyless S2 shares a rate-limited pool; pace page requests
 
 
 ATOM = "{http://www.w3.org/2005/Atom}"

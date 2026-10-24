@@ -265,3 +265,104 @@ def test_hit_counts_keeps_existing_comma_header(tmp_path, monkeypatch):
                    "--hit-counts", str(hc), "--date", "20261024"]) == 0
     rows = list(csv.reader(hc.open()))
     assert rows[1][:4] == ["pubmed", "NCBI E-utilities", "2026-10-24", "1"]
+
+
+class _Resp:
+    def __init__(self, body):
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *x):
+        return False
+
+    def read(self):
+        return self.body
+
+
+@pytest.mark.parametrize("code", [429, 503])
+def test_http_get_retries_once_after_5s(monkeypatch, code):
+    import io
+    import urllib.error
+    calls, waits = [], []
+
+    def urlopen(req, timeout=None):
+        calls.append(req.full_url)
+        if len(calls) == 1:
+            raise urllib.error.HTTPError(req.full_url, code, "busy", {}, io.BytesIO(b"{}"))
+        return _Resp(b"ok")
+    monkeypatch.setattr(a.urllib.request, "urlopen", urlopen)
+    assert a.http_get("https://api.openalex.org/works", sleep=waits.append) == b"ok"
+    assert len(calls) == 2 and waits == [5]
+
+
+def test_http_get_gives_up_after_second_429(monkeypatch):
+    import io
+    import urllib.error
+    calls = []
+
+    def urlopen(req, timeout=None):
+        calls.append(1)
+        raise urllib.error.HTTPError(req.full_url, 429, "busy", {}, io.BytesIO(b"{}"))
+    monkeypatch.setattr(a.urllib.request, "urlopen", urlopen)
+    with pytest.raises(a.SourceError, match="HTTP 429"):
+        a.http_get("https://api.openalex.org/works", sleep=lambda s: None)
+    assert len(calls) == 2
+
+
+def test_openalex_stops_at_10000_results():
+    pages = []
+
+    def get(url, headers=None):
+        pages.append(int(qs(url)["page"]))
+        res = [{"id": f"W{pages[-1]}_{i}", "title": "t"} for i in range(100)]
+        return json.dumps({"meta": {"count": 50000}, "results": res}).encode()
+    total, recs = a.src_openalex("x", 20000, get)
+    assert total == 50000 and len(recs) == 10000
+    assert max(pages) == 100 and 101 not in pages
+
+
+def _arxiv_page(total):
+    return (f'<feed xmlns="http://www.w3.org/2005/Atom" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">'
+            f'<opensearch:totalResults>{total}</opensearch:totalResults>'
+            '<entry><id>http://arxiv.org/abs/2101.00001v1</id><title>t</title></entry></feed>').encode()
+
+
+def test_arxiv_waits_3s_between_pages(monkeypatch):
+    waits, calls = [], []
+    monkeypatch.setattr(a, "SLEEP", waits.append)
+
+    def get(url, headers=None):
+        calls.append(url)
+        return _arxiv_page(3)
+    total, recs = a.src_arxiv("x", 3, get)
+    assert len(calls) == 3 and len(recs) == 3
+    assert waits == [3, 3]
+
+
+def test_semanticscholar_stops_when_token_missing(monkeypatch):
+    waits, calls = [], []
+    monkeypatch.setattr(a, "SLEEP", waits.append)
+
+    def get(url, headers=None):
+        calls.append(qs(url).get("token"))
+        return json.dumps({"total": 500, "token": None if calls[1:] else "t2",
+                           "data": [{"paperId": f"p{len(calls)}", "title": "t"}]}).encode()
+    total, recs = a.src_semanticscholar("x", 100, get)
+    assert calls == [None, "t2"] and len(recs) == 2  # no third request, no repeat of page 1
+    assert waits == [1]
+
+
+def test_pubmed_efetch_batches_are_paced(monkeypatch):
+    waits, fetches = [], []
+    monkeypatch.setattr(a, "SLEEP", waits.append)
+    ids = [str(i) for i in range(450)]
+
+    def get(url, headers=None):
+        if "esearch" in url:
+            return json.dumps({"esearchresult": {"count": "450", "idlist": ids}}).encode()
+        fetches.append(len(qs(url)["id"].split(",")))
+        return b"<PubmedArticleSet/>"
+    a.src_pubmed("x", 450, get)
+    assert fetches == [200, 200, 50] and waits == [0.4, 0.4]

@@ -110,9 +110,9 @@ No project lock and no wait. The user is asked only for the papers on `please_fe
 - `04-library/oa_check.csv` and `04-library/pdfs/<record_id>-<hash>.pdf` — written by `find_oa_pdfs.py`
 - `04-library/pdf_status.csv` — header in step 2, one row per included record
 - `04-library/fulltext_need.tsv` — `record_id`, `doi`, `need`, `why`, `rank`, one row per included paper without a PDF
-- `04-library/please_fetch.md` and `please_fetch.tsv` — the ranked list for the user (`priority`, `record_id`, `doi`, `title`, `why`, `save_as`, `landing_url`)
-- `04-library/abstract_only.tsv` — missing papers read from the abstract; report them as a limitation
-- `04-library/uploads/<record_id>.pdf` — placed by the user
+- `04-library/please_fetch.md` and `please_fetch.tsv` — regenerated on every `please_fetch.py` run (do not hand-edit; change `fulltext_need.tsv` and rerun); the ranked list for the user (`priority`, `record_id`, `doi`, `title`, `why`, `save_as`, `landing_url`)
+- `04-library/abstract_only.tsv` — also regenerated on every run; missing papers read from the abstract; report them as a limitation
+- `04-library/uploads/<record_id>.pdf` — placed by the user under the `save_as` name (for a plain DOI list without `record_id`, the sanitized DOI plus a short hash, e.g. `10.1000_x-1a2b3c4d.pdf`); a file that does not start with `%PDF-`, such as a saved login page, does not count
 - Only when `use_zotero` is `true`: `04-library/included.ris`, `04-library/collections.md`, `04-library/collection_checklist.tsv` (`theme`, `record_id`, `user_confirmed`)
 - `04-library/doi_for_upload.tsv` only when the user asks for every closed DOI
 - `04-library/note_export/` and `04-library/note_attachment_log.tsv` only after the user asks to attach notes
@@ -121,7 +121,7 @@ No project lock and no wait. The user is asked only for the papers on `please_fe
 
 - Row count of `pdf_status.csv` equals row count of `included.tsv`.
 - Every DOI in the status file matches `included.tsv`.
-- `oa_status` is only a value OpenAlex or Unpaywall returned, or `not_checked`.
+- `oa_status` is only a value `find_oa_pdfs.py` wrote: OpenAlex or Unpaywall's own value (`gold`, `green`, `hybrid`, `bronze`, `diamond`, `closed`), `pmc_oa` (Europe PMC open-access copy), `s2_oa` (Semantic Scholar openAccessPdf), `green` for an arXiv DOI, or `not_found` / `not_checked`.
 - No URL points at an unauthorized copy. If the user pastes one, refuse to store it and record `no_legal_copy_found`.
 - `pdf_url` is empty when `pdf_status` is `no_legal_copy_found` or `requested_ill`.
 - `please_fetch.md` lists only `essential` papers without a PDF, ranked, each with a DOI (or `no DOI`) and a reason.

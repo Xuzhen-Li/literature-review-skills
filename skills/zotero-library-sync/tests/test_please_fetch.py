@@ -89,3 +89,35 @@ def test_intro_count_is_substituted():
     md = pf.render_md(fetch, 0)
     assert f"I could not get these {len(fetch)} papers" in md
     assert "{len" not in md and "{" not in md.split("\n")[2]
+
+
+def test_useful_with_why_is_not_handed_to_user():
+    status = STATUS + [{"record_id": "R6", "doi": "10.1000/f", "title": "Nice to have", "local_path": ""}]
+    need = NEED + [{"record_id": "R6", "doi": "10.1000/f", "need": "useful",
+                    "why": "extra detail on methods", "rank": "1"}]
+    fetch, abstract, _, _ = pf.build(status, need, None, 15)
+    assert "R6" not in {r["record_id"] for r in fetch}
+    assert [r["need"] for r in abstract if r["record_id"] == "R6"] == ["useful"]
+
+
+def test_html_saved_as_pdf_in_uploads_does_not_count(tmp_path):
+    up = tmp_path / "uploads"
+    up.mkdir()
+    (up / "R5.pdf").write_bytes(b"<!DOCTYPE html><html>Sign in</html>")
+    fetch, _, _, _ = pf.build(STATUS, NEED, up, 15)
+    assert "R5" in {r["record_id"] for r in fetch}
+
+
+def test_plain_doi_rows_get_a_real_upload_name(tmp_path):
+    status = [{"doi": "10.1000/Weird(1)/x", "title": "No id", "local_path": ""}]
+    need = [{"doi": "10.1000/weird(1)/x", "need": "essential", "why": "core", "rank": "1"}]
+    fetch, _, _, _ = pf.build(status, need, None, 15)
+    save_as = fetch[0]["save_as"]
+    assert "<" not in save_as and save_as.startswith("04-library/uploads/10.1000_weird_1_x-")
+    assert save_as.endswith(".pdf")
+    stem = Path(save_as).stem
+    assert stem == pf.upload_stem("", "https://doi.org/10.1000/WEIRD(1)/x")
+    up = tmp_path / "uploads"
+    up.mkdir()
+    (up / f"{stem}.pdf").write_bytes(b"%PDF-1.7")
+    assert pf.build(status, need, up, 15)[0] == []

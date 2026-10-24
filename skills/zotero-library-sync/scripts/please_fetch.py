@@ -5,7 +5,9 @@ A paper goes on the list only when all three hold:
   1. the agent marked it essential in 04-library/fulltext_need.tsv,
   2. it needs the full text (need=essential means exactly that), and
   3. the agent could not get it (no local_path in the status file and no
-     PDF at 04-library/uploads/<record_id>.pdf).
+     PDF at 04-library/uploads/<stem>.pdf, where <stem> is the record_id,
+     or for a plain DOI list the sanitized DOI plus a short hash, e.g.
+     10.1000_x_y-1a2b3c4d; a file counts only if it starts with %PDF-).
 
 Inputs
   --status  oa_check.csv from find_oa_pdfs.py (or pdf_status.csv): record_id,
@@ -13,7 +15,9 @@ Inputs
   --need    fulltext_need.tsv written by the agent: record_id, doi, need,
             why, rank. need is essential | useful | abstract_ok; rank is 1 for
             the most important paper.
-Outputs (in --out-dir, default 04-library)
+Outputs (in --out-dir, default 04-library). These three files are generated:
+every run rewrites them from the inputs, so never hand-edit them; edit
+fulltext_need.tsv and rerun instead.
   please_fetch.md   numbered list for the human: DOI, title, why it matters,
                     where to save the PDF
   please_fetch.tsv  the same rows for scripts
@@ -26,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -55,6 +60,17 @@ def _key(row: dict) -> str:
     return row.get("record_id") or _doi(row.get("doi", ""))
 
 
+def upload_stem(record_id: str, doi: str) -> str:
+    """File stem the user saves an upload under: record_id, else sanitized DOI + hash."""
+    if record_id:
+        return record_id
+    d = _doi(doi)
+    if not d:
+        return ""
+    base = re.sub(r"[^A-Za-z0-9._-]+", "_", d)[:80]
+    return f"{base}-{hashlib.sha1(d.encode('utf-8')).hexdigest()[:8]}"
+
+
 def _is_pdf(p: Path) -> bool:
     try:
         with p.open("rb") as fh:
@@ -75,8 +91,8 @@ def build(status: list[dict], need: list[dict], uploads: Optional[Path], max_n: 
             triage.setdefault(_doi(r["doi"]), r)
     missing = []
     for r in status:
-        rid = r.get("record_id", "")
-        have = bool(r.get("local_path")) or (uploads is not None and rid and _is_pdf(uploads / f"{rid}.pdf"))
+        stem = upload_stem(r.get("record_id", ""), r.get("doi", ""))
+        have = bool(r.get("local_path")) or (uploads is not None and bool(stem) and _is_pdf(uploads / f"{stem}.pdf"))
         if not have:
             missing.append(r)
     fetch, abstract, untriaged = [], [], []
@@ -87,7 +103,8 @@ def build(status: list[dict], need: list[dict], uploads: Optional[Path], max_n: 
             continue
         row = {"record_id": r.get("record_id", "") or t.get("record_id", ""),
                "doi": _doi(r.get("doi") or t.get("doi", "")), "title": r.get("title", ""),
-               "why": t.get("why", ""), "need": t["need"].lower(), "landing_url": r.get("landing_url", "")}
+               "why": t.get("why", ""), "need": t["need"].lower(), "landing_url": r.get("landing_url", ""),
+               "_stem": upload_stem(r.get("record_id", ""), r.get("doi") or t.get("doi", ""))}
         if row["need"] == "essential":
             try:
                 row["_rank"] = float(t.get("rank") or "inf")
@@ -103,7 +120,7 @@ def build(status: list[dict], need: list[dict], uploads: Optional[Path], max_n: 
     fetch = fetch[:max_n]
     for i, row in enumerate(fetch, 1):
         row["priority"] = i
-        row["save_as"] = f"04-library/uploads/{row['record_id']}.pdf" if row["record_id"] else "04-library/uploads/<doi>.pdf"
+        row["save_as"] = f"04-library/uploads/{row['_stem']}.pdf" if row["_stem"] else "(no DOI or record_id; ask the agent for a file name)"
     for row in overflow:  # over the cap: the review proceeds on the abstract
         row["need"] = "essential_over_cap"
         abstract.append(row)
