@@ -51,8 +51,11 @@ def openalex(doi: str, get: Callable[[str], dict]) -> dict:
     data = get(url)
     oa = data.get("open_access") or {}
     best = data.get("best_oa_location") or {}
+    pdf = best.get("pdf_url") or next(
+        (loc.get("pdf_url") for loc in data.get("locations") or []
+         if loc.get("is_oa") and loc.get("pdf_url")), "")
     return {"is_oa": bool(oa.get("is_oa")), "oa_status": oa.get("oa_status") or "",
-            "pdf_url": best.get("pdf_url") or "",
+            "pdf_url": pdf or "",
             "landing_url": best.get("landing_page_url") or oa.get("oa_url") or "",
             "title": data.get("title") or ""}
 
