@@ -1,9 +1,9 @@
 ---
 name: search-export-and-dedup
 description: >
-  Collects RIS, PubMed NBIB, and CSV exports of the locked searches, runs
-  scripts/dedup.py, and writes library.csv plus PRISMA identification
-  counts. Trigger on "export the search", "deduplicate", "merge the RIS
+  Runs the locked searches through free APIs itself (scripts/api_search.py),
+  adds any optional manual RIS/NBIB/CSV exports, runs scripts/dedup.py, and
+  writes library.csv plus PRISMA identification counts. Trigger on "export the search", "deduplicate", "merge the RIS
   files", or "PRISMA counts". Do not use it before the search lock, and
   do not use it to screen for eligibility.
 ---
@@ -14,7 +14,7 @@ description: >
 
 On first use in a project, say this verbatim:
 
-I am search export and deduplication. I merge the export files you saved and I do not drop records to force the hit counts to match.
+I am search export and deduplication. I download the search results from free databases myself, merge them, and I do not drop records to force the hit counts to match. You do not need to export anything.
 
 ## When to use
 
@@ -26,40 +26,41 @@ I am search export and deduplication. I merge the export files you saved and I d
 - A place to put exports: `<project>/02-records/raw/`.
 - `scripts/dedup.py` in this skill directory (follow the symlink to the real path). Tests live in `tests/test_dedup.py`.
 - `scripts/verify_ids.py`, tests in `tests/test_verify_ids.py`. Reads `library.csv` or `evidence_table.csv` (a CSV table with `doi` or `pmid` columns). Optional environment variables: `LRS_CONTACT_EMAIL` (polite contact email for Crossref and NCBI queries) and `NCBI_API_KEY` (NCBI key enabling faster request rates); both are optional and never printed.
-- The user performs logins. Do not type a password or complete a publisher login.
-
-Open the database in the agent browser first. If that session is not logged in, or the browser tool fails, use computer control of the user's own desktop browser when that tool is available. The user types the password, captcha, and second factor. Do not ask for, type, or store them. If the computer still cannot download or export, give the user the export steps and wait for the files. Do not switch to an unauthorized copy.
+- `scripts/api_search.py`, tests in `tests/test_api_search.py`. No login or key is needed. Optional keys: `OPENALEX_API_KEY`, `NCBI_API_KEY`, `S2_API_KEY`, and `LRS_CONTACT_EMAIL`; never printed.
+- Optional subscription databases only (`use_subscription_databases: true`): the user performs logins. Do not type a password or complete a publisher login. Open the database in the agent browser; if it is not logged in, use computer control of the user's desktop browser when available and let the user sign in. Do not ask for, type, or store a password, captcha, or second factor. Do not switch to an unauthorized copy.
 
 ## Procedure (numbered steps)
 
 1. Create `<project>/02-records/raw/` if it is missing.
-2. One file per database, named `<source>_<YYYYMMDD>.<ext>`:
+2. Default: run the locked free-API strings yourself. Each source writes `02-records/raw/<source>_<YYYYMMDD>.csv`:
 
-| Database | Save as | Extension |
-|----------|---------|-----------|
-| PubMed | Save, format PubMed (https://pubmed.ncbi.nlm.nih.gov/help/) | `.nbib` or `.txt` |
-| Web of Science | Export RIS | `.ris` |
-| Scopus | Export RIS or CSV | `.ris` or `.csv` |
-| Embase, if it was searched | RIS or CSV | `.ris` or `.csv` |
-| OpenAlex (free, no login) | Search at https://openalex.org/ , Export, CSV | `.csv` |
-| Europe PMC (free, no login) | Export, RIS | `.ris` |
+```bash
+python3 skills/search-export-and-dedup/scripts/api_search.py \
+  --openalex-query '<locked OpenAlex string>' --europepmc-query '<locked Europe PMC string>' \
+  --pubmed-query '<locked PubMed string>' --semanticscholar-query '<locked S2 string>' \
+  --arxiv-query '<locked arXiv string>' \
+  --out-dir <project>/02-records/raw --hit-counts <project>/01-search/hit_counts.tsv
+```
 
-No library account (`download_access: open_access`): PubMed, OpenAlex, and Europe PMC need no login and export directly. That set is enough for most narrative reviews; state it in the methods. Can't export at all? Paste one DOI per line into `02-records/raw/manual_YYYYMMDD.csv` with a `doi,title,year` header and use `--source manual`.
+Leave out a source the locked file dropped (`--sources openalex,europepmc,pubmed`). `--max` (default 2000) caps records per source. Exit 1 means a source failed or hit `--max`: the notes column says `TRUNCATED` or the count is `[VERIFY]`. Raise `--max`, narrow the string with the user, or record why the file is partial. Do not report a truncated file as the full search. The script refuses to overwrite an existing file; a rerun on the same day needs a new folder or the old file moved.
 
-The hit count in `hit_counts.tsv` should match the number of records in that file. If it does not, stop and ask the user which file is complete. Do not drop records to force a match.
+Optional extras, only when the locked file includes them: Web of Science (Export RIS, `wos_YYYYMMDD.ris`), Scopus (RIS or CSV, `scopus_YYYYMMDD.ris`), Embase (RIS or CSV). The user exports these; put the files in the same folder. A user's own DOI list goes in `02-records/raw/manual_YYYYMMDD.csv` with a `doi,title,year` header and `--source manual`.
 
-3. Ask the user to confirm the raw folder is the full locked search. Append `YYYY-MM-DD | search-export-and-dedup | exports_complete | human` only after they say yes.
+For each file, the record count should match its row in `hit_counts.tsv` (for API rows, the "retrieved N of T" note). If it does not, stop and find out why. Do not drop records to force a match.
+
+3. Checkpoint `exports_complete`. When every file came from `api_search.py` with exit 0, the agent records it: `YYYY-MM-DD | search-export-and-dedup | exports_complete (api_search, all sources complete) | agent`. When there are manual exports, ask the user to confirm that folder is the full search, and append the line with `| human` only after they say yes.
 4. Run dedup from the suite root (the directory that contains `skills/`):
 
 ```bash
 python3 skills/search-export-and-dedup/scripts/dedup.py \
-  --input <project>/02-records/raw/pubmed_YYYYMMDD.nbib --source pubmed \
-  --input <project>/02-records/raw/wos_YYYYMMDD.ris --source wos \
-  --input <project>/02-records/raw/scopus_YYYYMMDD.csv --source scopus \
+  --input <project>/02-records/raw/openalex_YYYYMMDD.csv --source openalex \
+  --input <project>/02-records/raw/europepmc_YYYYMMDD.csv --source europepmc \
+  --input <project>/02-records/raw/pubmed_YYYYMMDD.csv --source pubmed \
+  --input <project>/02-records/raw/semanticscholar_YYYYMMDD.csv --source semanticscholar \
   --out-dir <project>/02-records
 ```
 
-Repeat `--input` / `--source` once per file. Source labels should be stable (`pubmed`, `wos`, `scopus`, `embase`). Omit `--source` only if the filename stem is already that label. CSV reading uses pandas when `import pandas` works, otherwise the stdlib `csv` module (`--use-pandas no` forces stdlib).
+Repeat `--input` / `--source` once per file. Source labels should be stable (`openalex`, `europepmc`, `pubmed`, `semanticscholar`, `arxiv`, `crossref`, and for optional exports `wos`, `scopus`, `embase`). Omit `--source` only if the filename stem is already that label. CSV reading uses pandas when `import pandas` works, otherwise the stdlib `csv` module (`--use-pandas no` forces stdlib).
 
 5. Read `02-records/prisma_counts.json`. Copy `by_source`, `identified_total`, `duplicates_removed`, and `duplicates_removed_by_key` into PRISMA-S items 15 and 16 in `01-search/search_strings.md`. Replace `[VERIFY]` on those two items only.
 6. Check the arithmetic: sum of `by_source.*.records_exported` equals `identified_total`; `identified_total` minus `duplicates_removed` equals `records_after_deduplication`. If not, stop. Do not hand-edit the JSON to make it balance.
@@ -91,17 +92,17 @@ If the script exits with code 1 and prints `no seed DOIs found`, no outputs are 
 
 ## Human gate(s)
 
-No lock. Checkpoint: the user confirms the exports are complete before you treat `library.csv` as the identification set. Record `exports_complete` in `LOG.md`.
+No lock. Checkpoint `exports_complete` in `LOG.md` before you treat `library.csv` as the identification set: an agent line when every file came from a complete `api_search.py` run, a human line when manual exports are included.
 
 ## Outputs (exact paths + formats)
 
-- `<project>/02-records/raw/` — the export files, unchanged.
+- `<project>/02-records/raw/` — the `api_search.py` CSVs (columns `title,year,authors,journal,doi,pmid,abstract,pdf_url,source_id`) and any manual exports, unchanged.
 - `<project>/02-records/library.csv` — header `record_id,title,year,authors,journal,doi,pmid,abstract,sources,n_copies,identity_key`. One row per kept record. `record_id` is `R0001` upward. `authors` parsed from RIS or NBIB are joined with `; ` (semicolon, space). `sources` joins source labels with `;` and no space, in first-seen order.
 - `<project>/02-records/prisma_counts.json` — `by_source` (each source label maps to `records_exported` and `files`), `identified_total`, `skipped_without_identifier`, `duplicates_removed`, `duplicates_removed_by_key` (`doi`, `pmid`, `title_year`), `records_after_deduplication`.
 
 ## Quality checklist
 
-- Every locked database has a raw file or a written reason that it was not searched.
+- Every locked database has a raw file or a written reason that it was not searched. No API file is truncated without a note.
 - JSON arithmetic holds.
 - `identity_key` is `doi`, `pmid`, `title_year`, or `none`.
 - No record was deleted except as a duplicate under the rule above.

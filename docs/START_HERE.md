@@ -1,30 +1,30 @@
 # Start here
 
-You do not need to start from step 1. You can jump in with a draft, a folder of papers, or no university library account at all. Find the row below that matches what you have right now, and copy the sentence in the last column into your AI tool (Claude Code, Cursor, Codex, ChatGPT, or DeepSeek).
+You do not need to start from step 1. You can jump in with a draft or a folder of papers. You do not need a university library account. Find the row below that matches what you have right now, and copy the sentence in the last column into your AI tool (Claude Code, Cursor, Codex, ChatGPT, or DeepSeek).
 
 | What you have | Start with | Skip | Say this |
 | --- | --- | --- | --- |
 | Only a topic, no papers | `review-project-setup` | nothing | `start a new review on <topic>` |
-| No library account (no Web of Science / Scopus) | `review-project-setup`, then answer `I will use open-access sources only` | Web of Science, Scopus, institutional login | `start a new review on <topic> using only free sources` |
+| You want Web of Science or Scopus too (optional) | `review-project-setup`, then say you have a library login | nothing | `start a new review on <topic>; I can also search Web of Science` |
 | A set of papers already (Zotero collection, EndNote/Mendeley library, PDF folder, or a DOI list) | `review-project-setup`, then `search-export-and-dedup`: export the collection as RIS (Zotero: right-click collection > Export Collection > RIS); for a PDF folder, drag the PDFs into Zotero (it reads their metadata) and export RIS; for a DOI list, write a CSV with a `doi,title,year` header. Pass the `.ris` or `.csv` with `--source manual` (dedup.py reads only `.ris`, `.nbib`, `.txt` PubMed, and `.csv`) | database searching (record in the methods that the set is user-supplied) | `I already have my papers in <path>; set up a review from them` |
 | A draft (any state, .md or .docx) | `review-writing` | the whole pipeline; no `project.yaml` needed | `rewrite my review <path>; fix the logic` |
 | A near-final manuscript | `journal-selection`, then `manuscript-polishing`, then `submission-package` | search, screening, drafting | `pick a journal for <path>` / `polish <path> for <journal>` |
 | A decision letter | `reviewer-response` | everything else | `draft a response to these reviewer comments` |
 | Not sure / mid-project | `review-orchestrator` | none | `what is the next step` |
 
-## Getting papers without special accounts
+## How papers are found and downloaded
 
-You do not need a university login or paid database subscriptions to run a review.
+You do not need a university login, a paid database, or Zotero. By default the agent does the searching and downloading itself:
 
-1. Search free databases: PubMed ([https://pubmed.ncbi.nlm.nih.gov/](https://pubmed.ncbi.nlm.nih.gov/)), OpenAlex ([https://openalex.org/](https://openalex.org/)), and Europe PMC ([https://europepmc.org/](https://europepmc.org/)). None of them need a login, and each one exports results as RIS or CSV.
+1. Search: the agent runs the locked search through free APIs (OpenAlex, Europe PMC, PubMed, Semantic Scholar, arXiv; Crossref on request) and writes the hit counts itself:
+   `python3 skills/search-export-and-dedup/scripts/api_search.py --query '<string>' --out-dir <project>/02-records/raw --hit-counts <project>/01-search/hit_counts.tsv`
 2. Merge and remove duplicates:
-   `python3 skills/search-export-and-dedup/scripts/dedup.py --input <file> --source pubmed ... --out-dir <project>/02-records`
-3. Download legal free PDFs for your included list (no account or API key needed):
-   `python3 skills/zotero-library-sync/scripts/find_oa_pdfs.py <project>/03-screening/included.tsv -o <project>/04-library/oa_check.csv --download <project>/04-library/uploads`
-   This script accepts any CSV or TSV with a `doi` column, or a plain text list of DOIs. If you set the `LRS_CONTACT_EMAIL` environment variable, it also checks Unpaywall as a second source.
-4. Get the remaining `closed` papers: try your library, interlibrary loan, a preprint server, or emailing the author. Run `pdf_handoff.py write` to list the missing papers and the exact file names to save them under. Shadow libraries are never used.
+   `python3 skills/search-export-and-dedup/scripts/dedup.py --input <project>/02-records/raw/openalex_<date>.csv --source openalex ... --out-dir <project>/02-records`
+3. Download legal open-access PDFs for the included papers (OpenAlex, Unpaywall when `LRS_CONTACT_EMAIL` is set, Europe PMC, Semantic Scholar, arXiv):
+   `python3 skills/zotero-library-sync/scripts/find_oa_pdfs.py <project>/03-screening/included.tsv -o <project>/04-library/oa_check.csv --download <project>/04-library/pdfs`
+4. The agent marks which missing papers are essential in `04-library/fulltext_need.tsv` and runs `please_fetch.py`. You get `04-library/please_fetch.md`: a short ranked list, each with its DOI, why it matters, and the file name to save it under in `04-library/uploads/`. Get what you can through your library, interlibrary loan, or the author. The review does not wait; anything you skip is cited from its abstract and listed as a limitation. Shadow libraries are never used.
 
-Zotero is optional. It helps manage collections and Word citations, but steps 1 to 4 work without it.
+Optional extras: Web of Science, Scopus, or Embase (set `use_subscription_databases: true` and give the `institutional_access` sentence), and Zotero collections (`use_zotero: true`). Nothing in steps 1 to 4 needs them.
 
 ## Who does what (one job per skill)
 
@@ -33,10 +33,10 @@ Zotero is optional. It helps manage collections and Word citations, but steps 1 
 | Entry | `review-orchestrator` | Read `project.yaml`, name the next skill | doing the work |
 | Setup | `review-project-setup` | Create the folder and `project.yaml` | choosing the angle |
 | Scope | `review-scoping-and-gaps` | Pick and lock the angle | search strings |
-| Search | `search-strategy-builder` | Write and lock search strings | running exports |
-| Records | `search-export-and-dedup` | Merge exports, deduplicate, PRISMA counts, check IDs, snowball | eligibility |
+| Search | `search-strategy-builder` | Write search strings, get the counts from free APIs, lock them | downloading records |
+| Records | `search-export-and-dedup` | Download records from free APIs, add optional exports, deduplicate, PRISMA counts, check IDs, snowball | eligibility |
 | Screening | `literature-screening` | Include/exclude with reasons | getting PDFs |
-| Full text | `zotero-library-sync` | Get legal PDFs, track `pdf_status`, optional Zotero | reading |
+| Full text | `zotero-library-sync` | Download OA PDFs, write the please-fetch list, track `pdf_status`, optional Zotero | reading |
 | Reading | `paper-deep-reading` | Notes and evidence-table rows | writing prose |
 | Style | `exemplar-review-analysis` | Style brief from 3 to 5 model reviews | outline |
 | Outline | `review-outline-builder` | Section claims and lock | prose |

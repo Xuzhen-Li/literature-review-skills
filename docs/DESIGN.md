@@ -24,14 +24,14 @@ Language: **English only** (instructions, templates, file names, outputs).
 2. Never fabricate DOIs, PMIDs, authors, years, journals, data, or reviewer
    responses. Unknown → `[VERIFY]`.
 3. Human gates: the agent stops and asks for one exact sentence at defined
-   gates (institutional access, topic lock, search string lock, inclusion
-   criteria lock, outline lock, journal lock, final submit). The homepage
-   is opened before the rest of the project file. Gates are listed in each
+   gates (optional institutional access, topic lock, search string lock, inclusion
+   criteria lock, outline lock, journal lock, final submit). Gates are listed in each
    skill. `yes` does not pass.
 4. Credentials and legal acts (logins, payments, copyright transfer, final
    Submit) are always performed by the user. The agent never types or stores
-   a password. If the computer cannot download a paper, it gives the DOI
-   and the user uploads the PDF.
+   a password. The agent searches free APIs and downloads open-access PDFs
+   itself; the user is asked only for a ranked list of essential papers it
+   could not get.
 5. Dynamic facts (impact factor, APC, word limits, journal scope) must be
    checked live on the official journal site and dated.
 6. Copyright-safe figures: default to original schematics and synthesis
@@ -79,9 +79,9 @@ Directory name = skill `name` (kebab-case). Each lives in `skills/<name>/`.
 | 1 | `review-project-setup` | Open the database homepage first, then create the layout, interview the user, and write `project.yaml` with `narrative_core_cap`. | `project.yaml`, `LOG.md` |
 | 2 | `review-scoping-and-gaps` | Quick landscape scan, candidate angles, gap statements, feasibility (record counts), recommend one angle; gate: topic lock. Optional later clustering of the exported library may ask to reopen that lock. It does not replace the question-first order. | `00-scope/scope_report.md` |
 | 3 | `search-strategy-builder` | PICO/PEO/SPIDER concepts → synonyms, MeSH/Emtree, field tags; per-database strings (PubMed, WoS, Scopus); test-run counts; PRISMA-S reporting block; gate: search lock. Optional wide, middle, and tight strings when a pasted hit count is extreme; exactly one string is locked. | `01-search/search_strings.md` |
-| 4 | `search-export-and-dedup` | Export searches. Agent browser first; if not logged in, computer control of the user's browser, with the user typing any password. Otherwise the user exports RIS/NBIB/CSV. Deduplicate by DOI → PMID → normalized title+year. Include a Python dedup script with tests. | `02-records/library.csv`, `prisma_counts.json` |
+| 4 | `search-export-and-dedup` | Run the locked searches through free APIs (OpenAlex, Europe PMC, PubMed, Semantic Scholar, arXiv; Crossref optional) with `api_search.py`. Optional subscription exports (RIS/NBIB/CSV) come from the user. Deduplicate by DOI → PMID → normalized title+year. Include a Python dedup script with tests. | `02-records/library.csv`, `prisma_counts.json` |
 | 5 | `literature-screening` | Inclusion/exclusion criteria (gate), title/abstract then full-text screening with reasons, optional dual-screener agreement (Cohen's kappa), PRISMA 2020 flow numbers. Narrative reviews keep `narrative_core_cap` and log the rest as not read. | `03-screening/screening.csv`, `prisma_flow.md` |
-| 6 | `zotero-library-sync` | Import included records to Zotero (RIS), collection map by theme, a checklist the user confirms, legal full-text retrieval. When download permission is missing, write a DOI list for the user to upload. Never use shadow libraries. | `04-library/pdf_status.csv`, `doi_for_upload.tsv` |
+| 6 | `zotero-library-sync` | Download legal OA PDFs, triage missing papers, and give the user only a ranked please-fetch list of essential papers. Zotero import and collections are optional. Never use shadow libraries. | `04-library/pdf_status.csv`, `fulltext_need.tsv`, `please_fetch.md` |
 | 7 | `paper-deep-reading` | Per-paper structured note (question, design, key findings with page refs, limitations, quotable figure ideas), and append rows to evidence table. Short quotes only, with page numbers. | `05-reading/*.md`, evidence rows |
 | 8 | `exemplar-review-analysis` | Pick 3-5 recent reviews the user can legally open; analyze structure, section length, figure count, citation density, tone; produce a style brief. After journal lock, refresh that brief from reviews in the locked journal. Do not rank them by an unopened metric. | `06-exemplars/style_brief.md` |
 | 9 | `review-outline-builder` | Thematic synthesis → outline with section claims, evidence IDs per section, planned figures/tables, word budget, plus required limitations and next-questions sections; gate: outline lock. Systematic reviews also get a registration reminder and a bias-tool checklist. Pooled estimates stay out unless the user asks and the outline says so. | `07-outline/outline.md` |

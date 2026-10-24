@@ -12,7 +12,8 @@ Select the entry skill based on what the user already has (full mapping in `docs
 * Near-final manuscript: `journal-selection`.
 * Decision letter: `reviewer-response`.
 * Unsure or mid-project: `review-orchestrator`.
-* No library account: use the gate sentence `I will use open-access sources only`, then run `skills/zotero-library-sync/scripts/find_oa_pdfs.py` to fetch legal free PDFs. Never use shadow libraries.
+* No library account is needed. The default flow is AI-first: `skills/search-export-and-dedup/scripts/api_search.py` searches OpenAlex, Europe PMC, PubMed, Semantic Scholar, and arXiv (Crossref on request) and writes hit counts; `skills/zotero-library-sync/scripts/find_oa_pdfs.py` downloads legal OA PDFs; `skills/zotero-library-sync/scripts/please_fetch.py` gives the user only the ranked list of essential papers the agent could not get. Never use shadow libraries.
+* Optional extras: subscription databases (`use_subscription_databases: true` plus the optional `institutional_access` gate) and Zotero (`use_zotero: true`). Neither is a prerequisite.
 
 ## Repository layout
 

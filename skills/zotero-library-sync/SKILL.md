@@ -1,13 +1,15 @@
 ---
 name: zotero-library-sync
 description: >
-  Imports the included records into Zotero, maps them to thematic
-  collections, and records a legal full-text route (Unpaywall, publisher,
-  institutional access, interlibrary loan, or a PDF the user uploads)
-  in pdf_status.csv. Trigger on "add to Zotero", "find the PDFs",
-  "Unpaywall", "full text", "collection checklist", or "export notes".
-  Do not use it to screen eligibility, to fetch unauthorized copies, or
-  to attach notes before the user asks and the reading notes exist.
+  Gets the full text of the included papers itself: finds and downloads
+  legal open-access PDFs (OpenAlex, Unpaywall, Europe PMC, Semantic
+  Scholar, arXiv), records each route in pdf_status.csv, and hands the
+  user only a short ranked please-fetch list of essential papers it could
+  not get. Zotero import and collections are optional. Trigger on "find
+  the PDFs", "full text", "download the papers", "please fetch", "add to
+  Zotero", "collection checklist", or "export notes". Do not use it to
+  screen eligibility, to fetch unauthorized copies, or to attach notes
+  before the user asks and the reading notes exist.
 ---
 
 # Zotero library sync
@@ -16,76 +18,68 @@ description: >
 
 On first use in a project, say this verbatim:
 
-I am Zotero library sync. I record a legal route for each included paper, and when this computer cannot download it I give you the DOI to upload.
+I am Zotero library sync. I download the open-access full texts myself. You only get a short list of the essential papers I could not get, each with its DOI and why it matters. Zotero is optional.
 
 ## When to use
 
-`03-screening/included.tsv` exists and `inclusion_lock` is true. This skill tracks legal PDF access. It does not decide inclusion.
+`03-screening/included.tsv` exists and `inclusion_lock` is true. This skill gets legal full text. It does not decide inclusion.
 
 ## Inputs (paths) / Preconditions
 
 - `<project>/03-screening/included.tsv` and `<project>/02-records/library.csv`.
-- Optional: the user's Zotero desktop library (steps 1-3 and 10). Without Zotero, skip the RIS import and collections; `find_oa_pdfs.py` and `pdf_handoff.py` still work. Import steps: https://www.zotero.org/support/adding_items_to_zotero
-- Collections: https://www.zotero.org/support/collections_and_tags
-- Unpaywall API: https://unpaywall.org/products/api
+- `<project>/project.yaml`: `download_access` (default `open_access`) and `use_zotero` (default `false`).
+- `scripts/find_oa_pdfs.py`, `scripts/please_fetch.py`, `scripts/pdf_handoff.py`. No account or key is needed. `LRS_CONTACT_EMAIL` turns on Unpaywall (it requires an email the user gave; do not invent one). `S2_API_KEY` is optional.
+- Optional, only when `use_zotero` is `true`: the user's Zotero desktop library (https://www.zotero.org/support/adding_items_to_zotero, https://www.zotero.org/support/collections_and_tags) and the RIS block shape in `references/ris_template.md`.
 - Crossref metadata when a DOI exists but the title or year is empty: https://www.crossref.org/documentation/retrieve-metadata/
-- A contact email the user provides for Unpaywall. Do not invent an email address.
-- RIS block shape in `references/ris_template.md`.
 
 ## Procedure (numbered steps)
 
-1. Write `04-library/included.ris` with one RIS record per row of `included.tsv`, using `references/ris_template.md` and fields from `library.csv` (abstract, authors, journal). Skip a field that is empty. Do not create a DOI.
-2. Tell the user to import that RIS file (Zotero: File, Import) into a new collection named `review-included`. The user clicks through the import. Do not ask them to import the whole pre-screening library into this collection.
-3. From the locked scope, propose at most eight thematic collection names. Write them in `04-library/collections.md` as a two-column list: collection name, and the `record_id`s that belong there. A record may sit in more than one collection. The user creates the collections and drags items. Search inside Zotero by DOI or PMID (https://www.zotero.org/support/searching) when the import needs a check.
-4. Fast path (no account, no API key, no Zotero needed): run the open-access finder on the included list. It asks OpenAlex first and Unpaywall only when `LRS_CONTACT_EMAIL` is set, and saves only legal OA PDFs:
+1. Download the open-access PDFs yourself. No login, no Zotero:
 
 ```bash
 python3 <suite>/skills/zotero-library-sync/scripts/find_oa_pdfs.py \
   <project>/03-screening/included.tsv \
   -o <project>/04-library/oa_check.csv \
-  --download <project>/04-library/uploads
+  --download <project>/04-library/pdfs
 ```
 
-Saved files are named `<record_id>-<hash>.pdf`, so copy `local_path` straight into `pdf_status.csv` (do not rely on `pdf_handoff.py accept` for them). It refuses to overwrite `-o` without `--force`, downloads only http/https links up to 100 MB, and exits 1 when a lookup or download failed. Use its `oa_status`, `pdf_url`, and `local_path` columns to fill `pdf_status.csv` (step 7): a saved file is `user_has_pdf` with `retrieval_route` `unpaywall` or `repository`; `closed` rows go to the upload list in step 8. If the script cannot reach the network, fall back to the manual Unpaywall query below. Manual query, one DOI at a time: URL-encode nothing inside the DOI path beyond what the docs show; the usual form is:
-
-```text
-https://api.unpaywall.org/v2/<doi>?email=<user email>
-```
-
-Read `is_oa`, `oa_status` (`gold`, `hybrid`, `green`, `bronze`, `closed`), and `best_oa_location.url_for_pdf` when present. One request at a time. If the API errors, record `oa_status=not_checked` and the error text. Do not retry in a tight loop.
-
-5. Try the agent browser first. If it is not logged in, or the browser tool fails, use computer control of the user's own desktop browser when that tool is available. The user types any password, captcha, or second factor. Do not ask for those values, do not type them, and do not store them.
-6. Choose a retrieval route in this order, and stop at the first that works.
-   - PDF already attached in their Zotero library, or already in `04-library/uploads/`.
-   - Unpaywall `url_for_pdf` when `is_oa` is true. The user downloads it.
-   - The DOI resolver `https://doi.org/<doi>` when `download_access` is `institutional`. Skip this route for `open_access` and `unavailable`.
-   - A green repository URL that Unpaywall listed.
-   - If the page refuses the download, the session has no entitlement, or `download_access` is `unavailable`, stop. Set `pdf_status` to `awaiting_user_upload`. Do not keep driving the desktop to reach a copy, and do not open a shadow library.
-   - Interlibrary loan or the user's document-delivery service, only when they ask. Record `requested_ill`. They send the request.
-If there is no DOI, set `oa_status` to `not_checked` and `notes` to `no DOI`. Try PMID via Zotero "Add Item by Identifier" only to confirm the item exists; still do not invent a DOI. Crossref lookup is for filling a blank title or year on a known DOI (`https://api.crossref.org/works/<doi>`), not for guessing a DOI from a title. A row with no DOI can still be uploaded by the user; leave `doi` empty in the list.
-7. Write `04-library/pdf_status.csv` with one row per included `record_id`. Header:
+It asks OpenAlex, Unpaywall (only with `LRS_CONTACT_EMAIL`), Europe PMC, Semantic Scholar, and arXiv in that order. When a download fails it tries the next source's link. It saves only legal OA copies (http/https, up to 100 MB) as `<record_id>-<hash>.pdf`, never overwrites a file, and refuses to overwrite `-o` without `--force`. Exit 1 means a lookup or download failed for some rows; the rows are still written. Run it again later for those rows before treating them as closed.
+2. Write `04-library/pdf_status.csv` with one row per included `record_id`. Header:
 
 ```text
 record_id,citation_key,doi,pmid,title,oa_status,pdf_url,retrieval_route,pdf_status,local_path,checked_on,notes
 ```
 
-`retrieval_route` is `zotero`, `unpaywall`, `publisher`, `repository`, `ill`, `user_upload`, or `none`. `pdf_status` is `available`, `requested_ill`, `no_legal_copy_found`, `user_has_pdf`, `awaiting_user_upload`, or `user_uploaded`. `pdf_url` is an Unpaywall, publisher, or repository URL, or empty. `checked_on` is today's date. `local_path` is the path the user gives after they save the file, or empty.
-
-8. For every `awaiting_user_upload` or `no_download_permission` row, write the DOI list and show it to the user. They save each PDF at the `save_as` path. You do not download it.
+Copy `oa_status`, `pdf_url`, and `local_path` from `oa_check.csv`. A saved file is `pdf_status` `user_has_pdf` with `retrieval_route` `unpaywall` or `repository` (`repository` covers Europe PMC, Semantic Scholar, and arXiv; name the source in `notes`). A row with no saved file is `no_legal_copy_found` with route `none`. When `download_access` is `institutional`, you may first try `https://doi.org/<doi>` in the logged-in browser (route `publisher`); the user types any password, captcha, or second factor, never you. `retrieval_route` is `zotero`, `unpaywall`, `publisher`, `repository`, `ill`, `user_upload`, or `none`. `pdf_status` is `available`, `requested_ill`, `no_legal_copy_found`, `user_has_pdf`, `awaiting_user_upload`, or `user_uploaded`. `checked_on` is today's date. If there is no DOI, set `oa_status` to `not_checked` and `notes` to `no DOI`; do not invent a DOI. Crossref is for filling a blank title or year on a known DOI (`https://api.crossref.org/works/<doi>`), not for guessing one.
+3. Triage every included paper that has no PDF. Write `04-library/fulltext_need.tsv` with the header `record_id,doi,need,why,rank`:
+   - `essential`: the review cannot be written honestly from the abstract. For example it is a core study whose methods, effect sizes, or figures you must read, the only source for a claim in the locked scope, or a key paper that defines the field. `why` is one sentence the user can read, and `rank` is 1 for the most important.
+   - `useful`: the full text would help, but the abstract carries the point.
+   - `abstract_ok`: the abstract is enough for how the review uses it.
+   Keep `essential` short. Rank by how much of the review rests on the paper. Do not mark a paper essential just because it is closed.
+4. Build the please-fetch list:
 
 ```bash
-python3 <suite>/skills/zotero-library-sync/scripts/pdf_handoff.py write \
-  --status <project>/04-library/pdf_status.csv \
-  --out <project>/04-library/doi_for_upload.tsv
+python3 <suite>/skills/zotero-library-sync/scripts/please_fetch.py \
+  --status <project>/04-library/oa_check.csv \
+  --need <project>/04-library/fulltext_need.tsv \
+  --uploads <project>/04-library/uploads \
+  --out-dir <project>/04-library
+```
+
+It lists only papers that are `essential`, still have no PDF, and are not yet in `uploads/`, ranked, at most `--max` (default 15). Every other missing paper goes to `abstract_only.tsv`. Exit 2 means a missing paper has no triage row, or a triage row is malformed; fix `fulltext_need.tsv` and run it again. If it says essential papers spilled over `--max`, tighten the ranking instead of raising the cap.
+5. Show the user `04-library/please_fetch.md` as it is: the numbered DOIs, why each matters, and the `04-library/uploads/<record_id>.pdf` name to save under. That is the only thing you ask them to fetch. If the list is empty, say so and carry on. Do not wait for the uploads: reading goes on, and a paper that never arrives is cited from its abstract only.
+6. When the user says they saved files, record them:
+
+```bash
 python3 <suite>/skills/zotero-library-sync/scripts/pdf_handoff.py accept \
   --status <project>/04-library/pdf_status.csv \
   --uploads <project>/04-library/uploads \
   --out <project>/04-library/pdf_status.csv
 ```
 
-`accept` changes a row to `user_uploaded` only when `04-library/uploads/<record_id>.pdf` is a non-empty PDF. Leave the other rows waiting.
-9. Append `YYYY-MM-DD | zotero-library-sync | pdf status written for <N> records | agent`.
-10. Write `04-library/collection_checklist.tsv` with the header `theme,record_id,user_confirmed`. Use the theme names from `04-library/collections.md`, at most eight. Every included `record_id` appears at least once. Set `user_confirmed` to `no` until the user checks the list against the collections they created. Desktop control may open the database homepage or a download page. It does not click through Zotero for them, and it does not type credentials. When they confirm, set the matching cells to `yes` and run:
+`accept` changes `awaiting_user_upload` or `no_download_permission` rows only, so first set the please-fetch rows to `awaiting_user_upload`. Then rerun step 4 so the list shrinks. `pdf_handoff.py write` still makes the older `doi_for_upload.tsv` for every closed paper; use it only when the user asks for the full list.
+7. Append `YYYY-MM-DD | zotero-library-sync | pdf status written for <N> records; please_fetch <K>; abstract_only <M> | agent`.
+8. Optional, only when `use_zotero` is `true`. Write `04-library/included.ris` with one record per row of `included.tsv` (`references/ris_template.md`, fields from `library.csv`, empty fields skipped, no invented DOI). The user imports it into a collection named `review-included`. Propose at most eight theme collections in `04-library/collections.md` (collection name, `record_id`s). Write `04-library/collection_checklist.tsv` with the header `theme,record_id,user_confirmed`, every included `record_id` at least once, `user_confirmed` `no` until the user checks it. When they confirm, set the cells to `yes` and run:
 
 ```
 python3 <suite>/skills/zotero-library-sync/scripts/check_collections.py \
@@ -94,8 +88,8 @@ python3 <suite>/skills/zotero-library-sync/scripts/check_collections.py \
   --ready
 ```
 
-`OK collections` is required before deep reading. Append `YYYY-MM-DD | zotero-library-sync | collection checklist confirmed | human`.
-11. Export project notes only after `paper-deep-reading` has written `05-reading/` and the user asks. Do not run this step in the same pass as the PDF status table, and do not log in.
+Append `YYYY-MM-DD | zotero-library-sync | collection checklist confirmed | human` after `OK collections`. Do not click through Zotero for the user or type credentials.
+9. Export project notes only after `paper-deep-reading` has written `05-reading/` and the user asks. Do not run this step in the same pass as the PDF status table, and do not log in.
 
 ```
 python3 <suite>/skills/zotero-library-sync/scripts/export_notes.py \
@@ -105,20 +99,22 @@ python3 <suite>/skills/zotero-library-sync/scripts/export_notes.py \
   --log <project>/04-library/note_attachment_log.tsv
 ```
 
-The user attaches each file. The script does not overwrite a copy that is already in `note_export`. After they confirm an attachment, rerun with `--confirm --mark-attached <citation_key> --log <project>/04-library/note_attachment_log.tsv`. The log is the record of what was attached. A missing `record_id` line blocks that export.
+The user attaches each file. The script does not overwrite a copy that is already in `note_export`. After they confirm an attachment, rerun with `--confirm --mark-attached <citation_key> --log <project>/04-library/note_attachment_log.tsv`. A missing `record_id` line blocks that export.
 
 ## Human gate(s)
 
-No project lock. Stop when a paper cannot be downloaded and hand the user `doi_for_upload.tsv`. Do not store their password.
+No project lock and no wait. The user is asked only for the papers on `please_fetch.md`. When `use_zotero` is `true`, `collection_checklist_confirmed` is a checkpoint. Do not ask for or store a password.
 
 ## Outputs (exact paths + formats)
 
-- `04-library/included.ris`
-- `04-library/collections.md`
-- `04-library/pdf_status.csv` — header in step 7, one row per included record
-- `04-library/doi_for_upload.tsv` — `record_id`, `doi`, `title`, `save_as`, when a download is not permitted
+- `04-library/oa_check.csv` and `04-library/pdfs/<record_id>-<hash>.pdf` — written by `find_oa_pdfs.py`
+- `04-library/pdf_status.csv` — header in step 2, one row per included record
+- `04-library/fulltext_need.tsv` — `record_id`, `doi`, `need`, `why`, `rank`, one row per included paper without a PDF
+- `04-library/please_fetch.md` and `please_fetch.tsv` — the ranked list for the user (`priority`, `record_id`, `doi`, `title`, `why`, `save_as`, `landing_url`)
+- `04-library/abstract_only.tsv` — missing papers read from the abstract; report them as a limitation
 - `04-library/uploads/<record_id>.pdf` — placed by the user
-- `04-library/collection_checklist.tsv` — `theme`, `record_id`, `user_confirmed`
+- Only when `use_zotero` is `true`: `04-library/included.ris`, `04-library/collections.md`, `04-library/collection_checklist.tsv` (`theme`, `record_id`, `user_confirmed`)
+- `04-library/doi_for_upload.tsv` only when the user asks for every closed DOI
 - `04-library/note_export/` and `04-library/note_attachment_log.tsv` only after the user asks to attach notes
 
 ## Quality checklist
@@ -128,18 +124,19 @@ No project lock. Stop when a paper cannot be downloaded and hand the user `doi_f
 - `oa_status` is only a value OpenAlex or Unpaywall returned, or `not_checked`.
 - No URL points at an unauthorized copy. If the user pastes one, refuse to store it and record `no_legal_copy_found`.
 - `pdf_url` is empty when `pdf_status` is `no_legal_copy_found` or `requested_ill`.
-- `check_collections.py --ready` prints `OK collections` before reading starts.
+- `please_fetch.md` lists only `essential` papers without a PDF, ranked, each with a DOI (or `no DOI`) and a reason.
+- When `use_zotero` is `true`, `check_collections.py --ready` prints `OK collections`.
 - A note log exists only after `--confirm`, and it lists no note that was not in `05-reading/`.
 
 ## Guardrails
 
 - Do not use shadow libraries, and do not name or link to them as a fallback.
 - Do not scrape a publisher PDF behind a login by replaying the user's cookies.
-- When the computer has no download permission, give the DOI and wait for the upload. Do not fetch the URL yourself.
+- Do not hand the user a paper you could get yourself, or a paper that is not essential. Do not fetch a closed paper through a route the user has not authorized.
 - Do not mark `available` unless the user has the file or an open `url_for_pdf` was returned.
 - Do not change screening decisions from this skill.
 - Do not attach notes, or overwrite an existing export copy, unless the user asked.
 
 ## Next step
 
-`paper-deep-reading` for each included record, after `check_collections.py --ready` prints `OK collections`. A missing PDF does not block a note if the user has another legal copy or chooses to skip that paper; record the skip in `notes` and do not invent findings. Note export waits until those notes exist and the user asks.
+`paper-deep-reading` for each included record once `pdf_status.csv`, `fulltext_need.tsv`, and `please_fetch.md` exist (and, when `use_zotero` is `true`, after `OK collections`). A missing PDF does not block reading: `paper-deep-reading` logs a no-PDF skip for that record, and the review cites it from its abstract only, as listed in `abstract_only.tsv`. Do not invent findings. Note export waits until those notes exist and the user asks.

@@ -44,7 +44,38 @@ Illustrative only (do not reuse as a real strategy):
 ("machine learning"[tiab] OR "deep learning"[tiab]) AND (diagnos*[tiab]) AND 2018:2026[dp]
 ```
 
-## Web of Science Core Collection
+## OpenAlex (free API, default)
+
+- Heading in `search_strings.md`: `## OpenAlex`. Run with `api_search.py --openalex-query`.
+- The string goes to `search=`, which matches title, abstract, and full text where OpenAlex has it. Uppercase `AND`, `OR`, `NOT`, parentheses, and `"exact phrases"` work. There are no field tags or MeSH.
+- Keyless use returns the first 10,000 hits. More needs `OPENALEX_API_KEY`.
+- Docs: https://docs.openalex.org/how-to-use-the-api/get-lists-of-entities/search-entities
+
+## Europe PMC (free API, default)
+
+- Heading: `## Europe PMC`. Run with `--europepmc-query`.
+- Fields: `TITLE:`, `ABSTRACT:`, `TITLE_ABS:`, `KW:`, `MESH:` (for example `TITLE_ABS:"heat stress"`). `SRC:PPR` limits to preprints (bioRxiv, medRxiv); `NOT SRC:PPR` drops them. `PUB_YEAR:[2015 TO 2026]` is a date limit.
+- Docs: https://europepmc.org/searchsyntax
+
+## Semantic Scholar (free API, default)
+
+- Heading: `## Semantic Scholar`. Run with `--semanticscholar-query` (bulk search).
+- Operators: `+` must, `|` or, `-` not, `"phrase"`, `*` prefix, parentheses. Plain words with no operator are joined with AND. It does not read `AND`/`OR` words.
+- Docs: https://api.semanticscholar.org/api-docs/graph#tag/Paper-Data/operation/get_graph_paper_bulk_search
+
+## arXiv (free API, default for physical, computational, and quantitative fields)
+
+- Heading: `## arXiv`. Run with `--arxiv-query`.
+- Fields: `ti:`, `abs:`, `all:`, `cat:` (for example `cat:q-bio.PE`). Operators `AND`, `OR`, `ANDNOT`. A phrase uses double quotes.
+- Drop arXiv with a written reason when the field has no arXiv presence. Biology and medicine preprints come through Europe PMC (`SRC:PPR`).
+- Docs: https://info.arxiv.org/help/api/user-manual.html
+
+## Crossref (free API, optional)
+
+- Heading: `## Crossref`. Run with `--sources ...,crossref --crossref-query`.
+- `query=` is a relevance search with no Boolean logic. Totals are inflated and not reproducible. Use it to fill in DOIs, not as a primary database.
+
+## Web of Science Core Collection (optional; needs a subscription)
 
 Record which indexes were ticked (for example SCI-EXPANDED, SSCI). The same string changes count when the edition changes.
 
@@ -76,7 +107,7 @@ Illustrative only:
 TS=("machine learning" OR "deep learning") AND TS=(diagnos*) AND PY=(2018-2026)
 ```
 
-## Scopus
+## Scopus (optional; needs a subscription)
 
 | Code | Field |
 |------|--------|

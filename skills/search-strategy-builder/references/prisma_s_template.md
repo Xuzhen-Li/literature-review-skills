@@ -5,7 +5,7 @@ Copy this into `01-search/search_strings.md` and replace every bracket. Item wor
 ```text
 ## PRISMA-S
 
-1. Database name: [each database and its platform, for example PubMed (NCBI), Web of Science Core Collection (Clarivate), Scopus (Elsevier)]
+1. Database name: [each database and its platform, for example OpenAlex (API), Europe PMC (REST API), PubMed (NCBI E-utilities), Semantic Scholar (Graph API bulk search), arXiv (API); optional Web of Science Core Collection (Clarivate) or Scopus (Elsevier)]
 2. Multi-database searching: [platform name and the databases searched together, or "each database was searched separately"]
 3. Study registries: [names, or "not searched" plus why]
 4. Online resources and browsing: [what was browsed and how, or "none"]

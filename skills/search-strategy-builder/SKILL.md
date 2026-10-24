@@ -1,9 +1,10 @@
 ---
 name: search-strategy-builder
 description: >
-  Builds copy-pasteable PubMed, Web of Science, and Scopus search strings
-  from the locked question, with field tags, a PRISMA-S block, and hit
-  counts the user pastes, then stops for the search lock. Trigger on
+  Builds search strings for the free APIs (OpenAlex, Europe PMC, PubMed,
+  Semantic Scholar, arXiv) from the locked question, runs them for hit
+  counts itself, writes a PRISMA-S block, then stops for the search lock.
+  Web of Science and Scopus are optional extras. Trigger on
   "write the search", "search string", "MeSH", "PRISMA-S", or "lock the
   search". Do not use it before the topic lock, and do not use it to
   export records or screen them.
@@ -15,7 +16,7 @@ description: >
 
 On first use in a project, say this verbatim:
 
-I am the search strategy builder. I write database strings from the locked question and I do not invent hit counts.
+I am the search strategy builder. I write search strings for free databases, run them myself to get the hit counts, and I never invent a count. You do not need a database login.
 
 ## When to use
 
@@ -24,7 +25,7 @@ I am the search strategy builder. I write database strings from the locked quest
 ## Inputs (paths) / Preconditions
 
 - `<project>/00-scope/scope_report.md` — locked question and framework.
-- `<project>/project.yaml` — `review_type`.
+- `<project>/project.yaml` — `review_type`, `use_subscription_databases`.
 - Field tags in `references/database_syntax.md`. PRISMA-S items in `references/prisma_s_template.md`.
 - PubMed tags: https://pubmed.ncbi.nlm.nih.gov/help/search-tags/
 - MeSH: https://www.ncbi.nlm.nih.gov/mesh/
@@ -37,11 +38,20 @@ If the topic is not locked, stop and return to `review-scoping-and-gaps`.
 1. Copy the locked question into `01-search/search_strings.md`. List one row per concept from the scope framework: concept, free-text synonyms, MeSH (PubMed), Emtree (only if Embase will be searched). A synonym you did not check against a record or a thesaurus is marked `candidate`.
 2. Look up MeSH in the browser above. Record the descriptor, whether it is exploded (`[mh]`) or not (`[mh:noexp]`), and the entry terms you actually saw. If you did not open the page, write `MeSH: not looked up`. Do not invent a descriptor.
 3. Emtree is for Embase, not for Scopus. If the user is not searching Embase, write `Emtree: not used`. If they are, use the syntax for the platform they named (Embase.com `'term'/exp` or Ovid `exp term/`) from `references/database_syntax.md`, and label the platform.
-4. Write one fenced block per database the user can access, under a heading such as `## PubMed`, `## Web of Science`, or `## Scopus`. Default set is PubMed, Web of Science Core Collection, and Scopus. Drop a database the user cannot access and say why (PRISMA-S item 1). Do not add a database they did not agree to. Mark the string that will be run with `- Locked: yes`.
-5. Tag terms. Untagged PubMed terms are subject to automatic term mapping; the saved string must be the one PubMed ran. After the user runs it, ask them to copy the line from Advanced search History (https://pubmed.ncbi.nlm.nih.gov/advanced/) into the file if it differs from the draft.
+4. Write one fenced block per database under its own heading. The default set is free and needs no login: `## OpenAlex`, `## Europe PMC`, `## PubMed`, `## Semantic Scholar`, and `## arXiv` when the field posts preprints there. Syntax for each is in `references/database_syntax.md`. Drop a default source only with a written reason (PRISMA-S item 1). Add `## Web of Science` or `## Scopus` only when `use_subscription_databases` is `true`. Mark the string that will be run with `- Locked: yes`.
+5. Tag terms. Untagged PubMed terms are subject to automatic term mapping; the saved string must be the one PubMed ran. The API runs the string exactly as written. If you also open it on the PubMed website, copy the Advanced search History line (https://pubmed.ncbi.nlm.nih.gov/advanced/) into the file when it differs.
 6. Put limits in a separate sentence under each block: date, language, publication type, human/animal. Cochrane Handbook chapter 4 (https://training.cochrane.org/handbook) treats limits as something to justify. Default is no language limit. A date limit needs a reason in the file (for example the question starts at a named event). Species hedges such as `animals[mh] NOT humans[mh]` are only for questions that need them. Do not paste that hedge into a plant or methods review.
-7. Ask the user to run each locked string and paste, for each database: interface edition (WoS indexes selected; Scopus), the date, and the hit count. Record those rows in `01-search/hit_counts.tsv` with the header `database,interface,date,count,notes`. A count you did not receive is `[VERIFY]` in both files.
-8. If a pasted count is below 20 or above 5000, or the user says it is too large or too small to screen, offer a wide string, a middle string, and a tight string as in `references/string_breadths.md`. Those two bounds are suite defaults, not a database rule. The user still locks exactly one. If they decline the extra strings, keep the single locked string and add `- Breadth declined:` plus their reason. Do not invent a hit count for a string that was not run. Then run:
+7. Get the counts yourself. Run each locked free-API string with `--count-only` and `--hit-counts`; one row per source is appended to `01-search/hit_counts.tsv` (header `database,interface,date,count,notes`):
+
+```bash
+python3 <suite>/skills/search-export-and-dedup/scripts/api_search.py --count-only \
+  --openalex-query '<OpenAlex string>' --europepmc-query '<Europe PMC string>' \
+  --pubmed-query '<PubMed string>' --semanticscholar-query '<S2 string>' --arxiv-query '<arXiv string>' \
+  --hit-counts <project>/01-search/hit_counts.tsv
+```
+
+A source that errors is written as `[VERIFY]`; run it again later or drop it with a reason. For an optional subscription database, the user runs the string and pastes the interface edition, date, and count. A count you did not receive is `[VERIFY]` in both files.
+8. If a count is below 20 or above 5000, or the user says it is too large or too small to screen, offer a wide string, a middle string, and a tight string as in `references/string_breadths.md`. Those two bounds are suite defaults, not a database rule. The user still locks exactly one. If they decline the extra strings, keep the single locked string and add `- Breadth declined:` plus their reason. Do not invent a hit count for a string that was not run. Then run:
 
 ```
 python3 <suite>/skills/search-strategy-builder/scripts/check_strings.py \
@@ -52,7 +62,7 @@ python3 <suite>/skills/search-strategy-builder/scripts/check_strings.py \
 9. Fill the 16 PRISMA-S items from `references/prisma_s_template.md` at the bottom of `search_strings.md`. Item 15 (totals) and item 16 (deduplication) stay `[VERIFY]` until `search-export-and-dedup` has run; say that, do not invent totals.
 10. Note whether anyone peer-reviewed the strategy (PRESS 2015, McGowan et al., Journal of Clinical Epidemiology). If nobody did, item 14 says `not peer reviewed`.
 11. Ask: "Pass search lock on the strings in 01-search/search_strings.md dated [today]? Reply with: I confirm the search lock."
-12. On that exact sentence, only if no primary-database count is still `[VERIFY]`: set `gates.search_lock` to `true` and append `YYYY-MM-DD | search-strategy-builder | search lock passed | human`. On any other reply, edit and ask again.
+12. On that exact sentence, only if no searched database still has `[VERIFY]` as its count: set `gates.search_lock` to `true` and append `YYYY-MM-DD | search-strategy-builder | search lock passed | human`. On any other reply, edit and ask again.
 
 ## Human gate(s)
 
@@ -68,13 +78,13 @@ python3 <suite>/skills/search-strategy-builder/scripts/check_strings.py \
 - Each fenced string uses only tags from `references/database_syntax.md` for that platform. Ovid syntax is not inside a PubMed block.
 - Boolean operators are uppercase `AND`, `OR`, `NOT` (Scopus: `AND NOT`).
 - MeSH terms that were not opened in the MeSH browser are absent, not guessed.
-- `hit_counts.tsv` dates are the day the user ran the search.
+- `hit_counts.tsv` dates are the day the search ran. API rows were written by `api_search.py`, not typed.
 - The locked strings match the History line when PubMed rewrote the query.
 - `check_strings.py` prints `OK search strings`, with exactly one locked string per database.
 
 ## Guardrails
 
-- Do not report a hit count from memory or from a "typical" range.
+- Do not report a hit count from memory or from a "typical" range. Every count comes from an API response or a user paste.
 - Do not translate a PubMed string to WoS by swapping brackets only. Rebuild it with `TS=`, `TI=`, `DO=` and WoS proximity (`NEAR/n`).
 - Do not start exporting files in this skill.
 - Do not claim Embase and Scopus are the same database.

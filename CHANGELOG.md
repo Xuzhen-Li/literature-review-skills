@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- AI-first literature flow is now the default. `skills/search-export-and-dedup/scripts/api_search.py` runs the locked search against OpenAlex, Europe PMC, PubMed, Semantic Scholar, and arXiv (Crossref on request), writes one dedup-ready CSV per source, and appends hit counts; `--count-only` gives feasibility counts. Tests use no network.
+- `find_oa_pdfs.py` also looks up Europe PMC, Semantic Scholar, and arXiv, and tries the next source's link when a download fails.
+- New `skills/zotero-library-sync/scripts/please_fetch.py`: from `fulltext_need.tsv` triage it lists only essential papers the agent could not get, ranked, with DOI and reason (`please_fetch.md`); the rest go to `abstract_only.tsv`.
+- `institutional_access` is optional and no longer blocks routing. `project.yaml` defaults to `download_access: open_access` and adds `use_subscription_databases` and `use_zotero` (both `false`). Web of Science, Scopus, and Zotero collections are optional extras. Routing row 6 no longer waits for uploads or a collection checklist unless `use_zotero` is `true`.
 - Add `scripts/check_skills.py` and `tests/test_check_skills.py` for portable `SKILL.md` frontmatter checks.
 - Added `agents` to install targets.
 - Added `--project DIR` flag to install into project-specific paths instead of `$HOME`.

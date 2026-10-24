@@ -40,7 +40,7 @@ If there is no `project.yaml`, ask what the user already has before routing to s
 3. Walk routing rows 1 through 17 in order. Row 0 is this skill and is never the destination. The first row whose condition is true is the next skill. Later files do not cancel an earlier failed gate: if `09-draft/` has prose but `topic_lock` is not true, route back to `review-scoping-and-gaps`.
    `review-writing` is not a routing row. Name it as the next skill only when the user asks to rewrite or restructure an existing draft, fix paper-by-paper listing or template prose, or revise a Word file with live citations; it still respects every earlier gate in a project.
 4. Print the status report (template below) and stop. Name the skill and the first action from that skill. Do not start a second skill in this turn.
-5. If the user then confirms a gate in this chat, record it only when every file named for that gate in `shared/gates.md` already exists and `scripts/check_gate_phrase.py` prints `OK gate phrase` for that reply. The reply must be the exact sentence, as the whole message or as its only line. Set the boolean, append one log line, and route again. Otherwise leave the boolean false. `institutional_access` has no required file; the homepage was opened in `review-project-setup`.
+5. If the user then confirms a gate in this chat, record it only when every file named for that gate in `shared/gates.md` already exists and `scripts/check_gate_phrase.py` prints `OK gate phrase` for that reply. The reply must be the exact sentence, as the whole message or as its only line. Set the boolean, append one log line, and route again. Otherwise leave the boolean false. `institutional_access` is optional and has no required file.
 
 Status report:
 
@@ -60,12 +60,12 @@ Do not skip to: <the skill after next>
 | # | Skill | Enter when |
 |---|-------|------------|
 | 0 | `review-orchestrator` | Never selected. It only runs this table. |
-| 1 | `review-project-setup` | `project.yaml` is missing, has no `review_type`, or `institutional_access` is not true. |
+| 1 | `review-project-setup` | `project.yaml` is missing, or has no `review_type`, or `project_confirmed` is not in `LOG.md`. `institutional_access` is optional and never blocks. |
 | 2 | `review-scoping-and-gaps` | `topic_lock` is not true. |
 | 3 | `search-strategy-builder` | `topic_lock` is true and `search_lock` is not true. |
 | 4 | `search-export-and-dedup` | `search_lock` is true and `02-records/library.csv` or `02-records/prisma_counts.json` is missing. |
 | 5 | `literature-screening` | The library exists and (`inclusion_lock` is not true, or `03-screening/screening.csv`, `03-screening/prisma_flow.md`, or `03-screening/included.tsv` is missing). When `review_type` is `narrative`, also enter while `03-screening/core_decision.tsv`, `03-screening/not_read.tsv`, or `03-screening/cap_overflow.tsv` is missing. |
-| 6 | `zotero-library-sync` | `inclusion_lock` is true, `included.tsv` exists, and (`04-library/pdf_status.csv` is missing or lacks a row for any included `record_id`, or any `pdf_status` is `awaiting_user_upload` or `no_download_permission`, or `04-library/collection_checklist.tsv` is missing, or any `user_confirmed` cell is not `yes`). |
+| 6 | `zotero-library-sync` | `inclusion_lock` is true, `included.tsv` exists, and (`04-library/pdf_status.csv` is missing or lacks a row for any included `record_id`, or `04-library/fulltext_need.tsv` or `04-library/please_fetch.md` is missing, or `use_zotero` is `true` and `04-library/collection_checklist.tsv` is missing or has a `user_confirmed` cell that is not `yes`). Papers still on the please-fetch list do not block: reading goes on with the abstract. |
 | 7 | `paper-deep-reading` | Some included `record_id` has neither a `05-reading/*.md` file containing that id nor a `LOG.md` line that records a no-PDF skip for that id. |
 | 8 | `exemplar-review-analysis` | Every included record has a note and `06-exemplars/style_brief.md` is missing. |
 | 9 | `review-outline-builder` | The style brief exists and (`outline_lock` is not true, including when `07-outline/outline.md` is still `Status: draft`, or `review_type` is `systematic` and `07-outline/systematic_methods_checklist.md` is missing). |
@@ -84,11 +84,11 @@ After `final_submit: true` with no decision letter, the report is: waiting for t
 
 ## Human gate(s)
 
-Enforce these seven. Do not add others. Questions and required files are in `shared/gates.md`.
+Enforce these six, plus the optional `institutional_access` when the user asked for it. Do not add others. Questions and required files are in `shared/gates.md`.
 
 | Key | Owner |
 |-----|--------|
-| `institutional_access` | `review-project-setup` |
+| `institutional_access` (optional) | `review-project-setup` |
 | `topic_lock` | `review-scoping-and-gaps` |
 | `search_lock` | `search-strategy-builder` |
 | `inclusion_lock` | `literature-screening` |
@@ -118,7 +118,7 @@ YYYY-MM-DD | review-orchestrator | <gate key> passed: <the exact sentence> | hum
 - Do not fabricate records, hit counts, or reviewer comments.
 - Do not mark a gate true because the draft "looks ready".
 - Do not delete `LOG.md` lines or other keys in `project.yaml`.
-- Do not run database logins, payments, copyright transfer, or the journal Submit button.
+- Do not ask the user to log in to a database or Zotero as a prerequisite. Do not run database logins, payments, copyright transfer, or the journal Submit button.
 
 ## Next step
 

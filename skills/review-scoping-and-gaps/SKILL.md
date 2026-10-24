@@ -2,7 +2,7 @@
 name: review-scoping-and-gaps
 description: >
   Turns a working title into three candidate angles, a gap statement, and a
-  feasibility count the user pastes from a database, then recommends one
+  feasibility count from free database APIs, then recommends one
   angle and stops for the topic lock. Trigger on "scope the review",
   "find the gap", "which angle", "lock the topic", or "cluster the
   export". Do not use it to write the full search strategy, screen
@@ -27,7 +27,7 @@ I am review scoping and gaps. I compare candidate angles against the locked revi
 - `<project>/project.yaml` with `review_type`, `topic`, `field`, and `audience`.
 - `<project>/LOG.md`.
 - Framework definitions in `references/question_frameworks.md`.
-- PubMed for the feasibility count: https://pubmed.ncbi.nlm.nih.gov/
+- Free APIs for the feasibility count: `skills/search-export-and-dedup/scripts/api_search.py --count-only` (PubMed and OpenAlex; no login).
 
 If `review_type` is empty, return to `review-project-setup`.
 
@@ -36,13 +36,14 @@ If `review_type` is empty, return to `review-project-setup`.
 1. Read the working topic. Write the question in the framework that matches `review_type` (table in `references/question_frameworks.md`). Leave a cell as `[VERIFY]` rather than inventing a population or outcome the user did not name.
 2. Propose three angles. Each angle gets: a one-sentence question, what it includes, what it excludes, and why a reader in `audience` would care. At least one angle must be narrower than the working title. Do not propose an angle that would require data the user has already said they lack.
 3. For each angle, write a gap statement in this shape: "Reviews to date cover X; they do not answer Y; this angle would answer Y by Z." If you cannot name X from a paper you opened in this session, write `X: [VERIFY]` and list the search you want the user to run. Do not cite a review you did not open.
-4. Feasibility is a count the user pastes, not an estimate. For each angle build one short PubMed query using `[tiab]` and, when you looked up a term at https://www.ncbi.nlm.nih.gov/mesh/, one `[mh]` term. Give the user this URL pattern and the exact query:
+4. Feasibility is a count from a database, not an estimate. For each angle build one short PubMed query using `[tiab]` and, when you looked up a term at https://www.ncbi.nlm.nih.gov/mesh/, one `[mh]` term, plus the same idea as plain words for OpenAlex. Run it yourself:
 
-```text
-https://pubmed.ncbi.nlm.nih.gov/?term=<url-encoded query>
+```bash
+python3 <suite>/skills/search-export-and-dedup/scripts/api_search.py --count-only \
+  --sources pubmed,openalex --pubmed-query '<PubMed query>' --openalex-query '<OpenAlex query>'
 ```
 
-Ask them to paste the result count and the date shown in PubMed. Until that paste exists, the count cell is `[VERIFY]`. Never write a number you did not see in their paste or on a page opened this session.
+Write each printed total with today's date and the source name. If a source fails, try once more, then give the user `https://pubmed.ncbi.nlm.nih.gov/?term=<url-encoded query>` and ask them to paste the count and date. Until a count exists from either route, the cell is `[VERIFY]`. Never write a number you did not see in the script output, a page opened this session, or the user's paste.
 
 5. Recommend one angle in a short paragraph: fit to review type, a non-`[VERIFY]` count if one exists, and the narrowest question that still has enough records to discuss. If every count is `[VERIFY]`, recommend an angle but say the recommendation is provisional.
 6. Write `00-scope/scope_report.md` with these headings: `Review type`, `Framework`, `Angle A`, `Angle B`, `Angle C`, `Feasibility`, `Recommendation`, `Out of scope`, `Gate`.
@@ -68,7 +69,7 @@ The groups are token overlap, not a new topic. If the file asks whether to reope
 
 ## Human gate(s)
 
-`topic_lock`. The working title in `project.yaml` is not this gate. A feasibility count of zero blocks the lock until the user picks a different angle or explicitly accepts a conceptual review with the count written as `0` from their paste. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only the exact sentence sets the lock. `institutional_access` must already be true.
+`topic_lock`. The working title in `project.yaml` is not this gate. A feasibility count of zero blocks the lock until the user picks a different angle or explicitly accepts a conceptual review with the count written as `0` from the script output or their paste. An optional decision card may come first (`shared/decision_cards.md`): four labeled options, one preferred, and a custom option rewritten as a plan with its risks. Only the exact sentence sets the lock.
 
 ## Outputs (exact paths + formats)
 
@@ -79,7 +80,7 @@ The groups are token overlap, not a new topic. If the file asks whether to reope
 ## Quality checklist
 
 - Three angles are present, and one is recommended.
-- Every hit count is either a user-pasted integer with a date or the token `[VERIFY]`.
+- Every hit count is an integer from `api_search.py` or a user paste, with a date, or the token `[VERIFY]`.
 - The framework matches `review_type`.
 - Out-of-scope items are concrete (population, year span, or study design), not "everything else".
 - The gate is still false in the yaml until the user says yes.

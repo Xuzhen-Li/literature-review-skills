@@ -18,12 +18,12 @@ I am paper deep reading. I write a note and evidence rows only from a file you h
 
 ## When to use
 
-An included record has a legal PDF or other full text the user can open (`04-library/pdf_status.csv` status `available` or `user_has_pdf`). Read one paper at a time. If the status is `no_legal_copy_found` or `requested_ill`, skip that record and say so. Do not read from an abstract alone and call it a deep read.
+An included record has a legal PDF or other full text the user can open (`04-library/pdf_status.csv` status `available`, `user_has_pdf`, or `user_uploaded`). Read one paper at a time. If the status is `no_legal_copy_found`, `awaiting_user_upload`, or `requested_ill`, log a no-PDF skip for that record and move on; do not wait for the user's upload. When the file arrives later, read it then. Do not read from an abstract alone and call it a deep read.
 
 ## Inputs (paths) / Preconditions
 
 - `<project>/03-screening/included.tsv` and `<project>/04-library/pdf_status.csv`.
-- `<project>/04-library/collection_checklist.tsv` with every `user_confirmed` cell `yes`. Do not start while `check_collections.py --ready` would fail.
+- Only when `use_zotero` is `true` in `project.yaml`: `<project>/04-library/collection_checklist.tsv` with every `user_confirmed` cell `yes`. Do not start while `check_collections.py --ready` would fail.
 - `<project>/02-records/library.csv` for DOI, PMID, authors, and `journal`. Copy `journal` into the evidence column `venue` and into the note's `venue` line. `03-screening/included.tsv` already stores that same value as `venue`.
 - The user's open copy of the paper.
 - Column rules in `references/evidence_columns.md` (same header as `shared/evidence_table_schema.md`).

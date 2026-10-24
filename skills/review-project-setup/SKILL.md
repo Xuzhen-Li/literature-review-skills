@@ -14,7 +14,7 @@ description: >
 
 On first use in a project, say this verbatim:
 
-I am review project setup. I first ask whether you have a library account. If you do not, we use free open-access sources and nothing needs to be logged in. Then I create the project folder and project.yaml from your answers.
+I am review project setup. I create the project folder and project.yaml from your answers. You do not need a library login: I search free databases and download open-access PDFs myself, and I only ask you for the few essential papers I cannot get.
 
 ## When to use
 
@@ -28,16 +28,9 @@ No `project.yaml` exists yet, or the user asked to start a review. This skill bu
 
 ## Procedure (numbered steps)
 
-1. Ask one question first: "Do you have a university or institute library login (Web of Science, Scopus, publisher access)?" If no, skip the homepage and go to step 2 with the open-access sentence. If yes, before any other project file, open the Web of Science homepage in the browser: https://www.webofscience.com/ . Do not type a password, a captcha, or a second factor. If the agent browser is not logged in, or it cannot open the page, use computer control of the user's own desktop browser when that tool is available, and let the user sign in. If neither browser can open the homepage, stop and ask the user to open it. After step 3, if PubMed will be searched, open https://pubmed.ncbi.nlm.nih.gov/ the same way before writing `project.yaml`.
-2. Ask for one exact line. `I have confirmed institutional login` sets `download_access: institutional`. `I have no download permission on this computer` sets `download_access: unavailable`. `I will use open-access sources only` sets `download_access: open_access` (no account needed; PubMed and OpenAlex are free). Any other reply, including yes or ok, leaves `gates.institutional_access` false. Check with:
-
-```bash
-python3 <suite>/skills/review-orchestrator/scripts/check_gate_phrase.py \
-  --gate institutional_access --reply "<user line>"
-```
-
-Use `--gate no_download_permission` for the second sentence and `--gate open_access_only` for the third. On a match, set `gates.institutional_access` to boolean `true`.
-3. Ask, in one message, for: working title; field; review type (`narrative`, `systematic`, `scoping`, or `umbrella`); audience (who will read it); timeline; target journal or `undecided`; whether PubMed will be searched; and the project directory path. Do this only after step 2 has passed.
+1. Do not ask about library logins. The default is `download_access: open_access`: the agent searches the free APIs (OpenAlex, Europe PMC, PubMed, Semantic Scholar, arXiv/bioRxiv, Crossref) and downloads open-access PDFs itself. No homepage needs to be opened and no gate is needed for this.
+2. Optional extra, only when the user brings it up or asks for Web of Science, Scopus, or their Zotero library: set `use_subscription_databases: true` or `use_zotero: true` as they ask. For subscription databases, open https://www.webofscience.com/ in the browser and let the user sign in (never type a password, captcha, or second factor), then ask for `I have confirmed institutional login` (sets `download_access: institutional`) or `I have no download permission on this computer` (sets `download_access: unavailable`). Check with `python3 <suite>/skills/review-orchestrator/scripts/check_gate_phrase.py --gate institutional_access --reply "<user line>"` (or `--gate no_download_permission`). On a match set `gates.institutional_access` to `true`. If the sentence never comes, stay on `open_access` and carry on; nothing later waits for it.
+3. Ask, in one message, for: working title; field; review type (`narrative`, `systematic`, `scoping`, or `umbrella`); audience (who will read it); timeline; target journal or `undecided`; whether PubMed will be searched; and the project directory path.
 4. Restate the four review types in one line each before accepting the answer if the user is unsure:
    - narrative: a scoped argument, not an exhaustive search; the reading set is capped by `narrative_core_cap`
    - systematic: a pre-specified question, search, and eligibility screen (PRISMA 2020)
@@ -67,7 +60,7 @@ Use `--gate no_download_permission` for the second sentence and `--gate open_acc
   14-revision/
 ```
 
-6. Write `project.yaml` from `references/project.yaml.example`. Set `narrative_core_cap` to `500` unless the user already typed a different positive integer in this interview. Do not change that number later. Set `search_pubmed` from their answer. Set `download_access` from step 2. Set `gates.institutional_access` to boolean `true` and every other gate to boolean `false`. Use today's date for `created` and `updated`. Set `language: en`. Quote any string that contains a colon.
+6. Write `project.yaml` from `references/project.yaml.example`. Set `narrative_core_cap` to `500` unless the user already typed a different positive integer in this interview. Do not change that number later. Set `search_pubmed` from their answer. Set `download_access: open_access`, `use_subscription_databases: false`, and `use_zotero: false` unless step 2 changed them. Set every gate to boolean `false`, except `institutional_access` when step 2 passed. Use today's date for `created` and `updated`. Set `language: en`. Quote any string that contains a colon.
 7. Write `LOG.md` exactly as:
 
 ```text
@@ -78,12 +71,12 @@ Append-only. One decision per line. Do not delete lines.
 YYYY-MM-DD | review-project-setup | project initialized | agent
 ```
 
-8. Show the user the yaml. Ask: "Confirm this project file? Reply yes or no." On yes, append `YYYY-MM-DD | review-project-setup | project_confirmed | human`. On no, edit only the fields they correct, except `narrative_core_cap` and `gates.institutional_access`, and ask again.
+8. Show the user the yaml. Ask: "Confirm this project file? Reply yes or no." On yes, append `YYYY-MM-DD | review-project-setup | project_confirmed | human`. On no, edit only the fields they correct, except `narrative_core_cap` and the gate keys, and ask again.
 9. Do not set `topic_lock`. The working title is not the locked angle.
 
 ## Human gate(s)
 
-`institutional_access` before `project.yaml` is finished and before every later skill. The three accepted sentences are in `shared/gates.md`. A checker script does not replace the user's sentence. Confirming the yaml is a checkpoint, not a lock. Topic lock belongs to `review-scoping-and-gaps`.
+None is required. `institutional_access` is an optional extra, used only when the user wants subscription databases or institutional downloads (sentences in `shared/gates.md`). A checker script does not replace the user's sentence. Confirming the yaml is a checkpoint, not a lock. Topic lock belongs to `review-scoping-and-gaps`.
 
 ## Outputs (exact paths + formats)
 
@@ -93,9 +86,9 @@ YYYY-MM-DD | review-project-setup | project initialized | agent
 
 ## Quality checklist
 
-- `institutional_access` is YAML `true` only after an exact sentence. The other gate keys exist and are YAML `false`, not the string `"false"`.
+- Every gate key exists and is YAML `false`, not the string `"false"`. `institutional_access` is `true` only after the optional exact sentence.
 - `narrative_core_cap` is a positive integer, `500` unless the user set it in the interview.
-- `download_access` is `institutional`, `unavailable`, or `open_access`.
+- `download_access` is `open_access` unless the optional gate set `institutional` or `unavailable`.
 - `review_type` is one of the four allowed words.
 - No search string, hit count, or citation appears in the yaml.
 - `LOG.md` has the initialized line and, after a yes, the confirmed line.
@@ -110,4 +103,4 @@ YYYY-MM-DD | review-project-setup | project initialized | agent
 
 ## Next step
 
-`review-scoping-and-gaps`, after `institutional_access` is true and `project_confirmed` is in the log. Until then, stay here.
+`review-scoping-and-gaps`, after `project_confirmed` is in the log. Until then, stay here.

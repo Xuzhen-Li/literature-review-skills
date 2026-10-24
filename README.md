@@ -14,7 +14,6 @@ This suite is for researchers writing a narrative, systematic, scoping, or umbre
 | You have | Start with |
 | --- | --- |
 | Only a topic | `start a new review on <topic>` (e.g. `start a new review on drought responses in grapevine`, which runs `review-project-setup`) |
-| No library account | Answer `I will use open-access sources only` at setup; use PubMed, OpenAlex, or Europe PMC, plus `find_oa_pdfs.py` |
 | Your own papers or a DOI list | Export them as RIS from Zotero or make a `doi,title,year` CSV, then run with `--source manual` |
 | A draft | `review-writing` (no project folder needed) |
 | A near-final manuscript | `journal-selection`, then `manuscript-polishing`, then `submission-package` |
@@ -25,9 +24,10 @@ This suite is for researchers writing a narrative, systematic, scoping, or umbre
 ## Features
 
 - Eighteen skills, from project setup through a point-by-point reviewer response. `review-orchestrator` reads `project.yaml` and routes to the next one.
-- Seven human gates. The first records whether you have a library login, have no download permission, or will use open-access sources only (no account needed). The others lock the topic, search strings, inclusion criteria, outline, journal, and final submit. Each lock accepts one exact sentence. The agent records it.
+- No login needed. The agent searches free APIs (OpenAlex, Europe PMC, PubMed, Semantic Scholar, arXiv, optionally Crossref), downloads open-access PDFs, and asks you only for a short ranked please-fetch list of essential papers it could not get, each with its DOI and why it matters. Web of Science, Scopus, and Zotero are optional extras.
+- Six human gates lock the topic, search strings, inclusion criteria, outline, journal, and final submit. An optional seventh, `institutional_access`, is used only for subscription databases. Each lock accepts one exact sentence. The agent records it.
 - An evidence table. Draft sentences map to evidence ids or stay marked `[NEEDS SOURCE]`.
-- A tested deduplicator (`DOI`, then `PMID`, then normalized title and year) that writes PRISMA identification counts from RIS, PubMed NBIB, and CSV exports.
+- A tested deduplicator (`DOI`, then `PMID`, then normalized title and year) that writes PRISMA identification counts from the API CSVs and any RIS, PubMed NBIB, or CSV exports.
 - An identifier checker (`skills/search-export-and-dedup/scripts/verify_ids.py`) that resolves DOIs (Digital Object Identifier strings usually starting with 10. that name papers) via Crossref (a DOI registration agency) and PMIDs (PubMed numeric ids) via NCBI (the US National Center for Biotechnology Information), writing flagged results (`[VERIFY]`) to `identifier_check.csv` without modifying the input file.
 - `skills/manuscript-polishing/scripts/export_refs.py`: Exports your records table to BibTeX (a plain text reference format used by LaTeX) and CSL-JSON (a reference format used by Pandoc and Zotero).
 - ASReview LAB compatibility: Export your library to screen with ASReview LAB and import the results back into your staging files.
@@ -73,9 +73,9 @@ flowchart TD
 | 1 | `review-project-setup` | Open the Web of Science homepage (and PubMed when it will be searched) before the project file. Then interview the user and write `project.yaml`, including `narrative_core_cap`. |
 | 2 | `review-scoping-and-gaps` | Landscape scan, candidate angles, gap statements, feasibility counts, and one recommended angle. Gate: topic lock. Optional post-export clustering can ask to reopen that lock. |
 | 3 | `search-strategy-builder` | PICO, PEO, or SPIDER concepts to synonyms, MeSH or Emtree, and field tags; PubMed, Web of Science, and Scopus strings; test-run counts; PRISMA-S block. Gate: search lock. Optional wide, middle, and tight strings when a hit count is extreme; one string stays locked. |
-| 4 | `search-export-and-dedup` | Export the searches. The agent browser goes first; if it is not logged in, computer control may open the user's own browser. The user types any password. Then merge and deduplicate, and write PRISMA identification counts. |
+| 4 | `search-export-and-dedup` | Run the locked searches through free APIs (`api_search.py`) and save one CSV per source. Optional subscription exports are added by the user. Then merge and deduplicate, and write PRISMA identification counts. |
 | 5 | `literature-screening` | Inclusion and exclusion criteria, title/abstract then full-text screening with reasons, optional Cohen's kappa, and PRISMA 2020 flow numbers. Narrative reviews keep the project cap and log the rest as not read. |
-| 6 | `zotero-library-sync` | Import included records to Zotero, map collections, and record legal full-text retrieval. When this computer cannot download a paper, write a DOI list and wait for the user to upload the PDF. No shadow libraries. Optional note export only after they ask. |
+| 6 | `zotero-library-sync` | Download legal OA PDFs (`find_oa_pdfs.py`), triage the rest, and hand the user only the ranked `please_fetch.md` list of essential papers. Reading does not wait for uploads. Zotero import and collections are optional. No shadow libraries. Optional note export only after they ask. |
 | 7 | `paper-deep-reading` | Per-paper notes and evidence-table rows. Short quotes only, with page numbers. |
 | 8 | `exemplar-review-analysis` | Read 3-5 recent reviews the user can open and write a style brief. After journal lock, refresh that brief from reviews in the locked journal. |
 | 9 | `review-outline-builder` | Thematic outline with section claims, evidence ids, planned figures, and a word budget, including limitations and next questions. Systematic reviews also get a registration reminder and a bias-tool checklist. Gate: outline lock. |

@@ -21,13 +21,13 @@ gates:
 
 A gate reply is the exact sentence below, as the whole message or as its only non-empty line. `yes`, `ok`, and a paraphrase do not pass. Check with `skills/review-orchestrator/scripts/check_gate_phrase.py`.
 
-The gates are `institutional_access`, `topic_lock`, `search_lock`, `inclusion_lock`, `outline_lock`, `journal_lock`, and `final_submit`. Checkpoints below are recorded in `LOG.md` but are not extra gates.
+The required gates are `topic_lock`, `search_lock`, `inclusion_lock`, `outline_lock`, `journal_lock`, and `final_submit`. `institutional_access` is optional: the default flow searches free APIs and downloads open-access PDFs without any login, so nothing waits for it. Checkpoints below are recorded in `LOG.md` but are not extra gates.
 
 | Gate | Exact sentence |
 |------|----------------|
-| `institutional_access` | `I have confirmed institutional login` |
-| `institutional_access` when this computer cannot download | `I have no download permission on this computer` |
-| `institutional_access` with no library account at all | `I will use open-access sources only` |
+| `institutional_access` (optional) | `I have confirmed institutional login` |
+| `institutional_access` (optional) when this computer cannot download | `I have no download permission on this computer` |
+| `institutional_access` (optional) to record the default explicitly | `I will use open-access sources only` |
 | `topic_lock` | `I confirm the topic lock` |
 | `search_lock` | `I confirm the search lock` |
 | `inclusion_lock` | `I confirm the inclusion lock` |
@@ -35,19 +35,19 @@ The gates are `institutional_access`, `topic_lock`, `search_lock`, `inclusion_lo
 | `journal_lock` | `I confirm the journal lock` |
 | `final_submit` | `I confirm the package is ready for me to submit` |
 
-The second homepage sentence still sets `gates.institutional_access` to `true`. It also sets `download_access: unavailable`. The first sentence sets `download_access: institutional`. The third sentence sets `download_access: open_access`: search only free databases (PubMed, OpenAlex, Europe PMC) and retrieve only open-access PDFs; paywalled papers go on the upload list.
+`download_access` defaults to `open_access` with no sentence at all: the agent searches the free APIs (OpenAlex, Europe PMC, PubMed, Semantic Scholar, arXiv, optionally Crossref), downloads open-access PDFs, and asks the user only for the ranked please-fetch list of essential papers it could not get. The first sentence sets `download_access: institutional` and allows subscription databases. The second sets `download_access: unavailable`. The third keeps `open_access`. Each sets `gates.institutional_access` to `true`.
 
 Installed skill folders do not include this file. Each owning skill repeats its own pass condition.
 
-## institutional_access
+## institutional_access (optional)
 
 - Owner: `review-project-setup`
-- Ask which case applies. With a library account, ask the user to open https://www.webofscience.com/ (and https://pubmed.ncbi.nlm.nih.gov/ when PubMed will be searched). Without one, no homepage is needed. Then ask for one of the three sentences in the table.
-- Files that must already exist: none. This gate is recorded before the rest of `project.yaml` is used for scoping.
+- Ask only when the user wants Web of Science, Scopus, Embase, or institutional downloads (`use_subscription_databases: true`). Open https://www.webofscience.com/ and let the user sign in, then ask for one of the sentences in the table.
+- Files that must already exist: none.
 - On the login sentence: set `gates.institutional_access` to `true` and `download_access` to `institutional`.
-- On the no-permission sentence: set `gates.institutional_access` to `true` and `download_access` to `unavailable`. Later PDF retrieval gives DOIs for the user to upload.
-- On the open-access sentence: set `gates.institutional_access` to `true` and `download_access` to `open_access`. `search-strategy-builder` writes strings for PubMed and OpenAlex only, unless the user adds a database later.
-- Blocks: every later skill
+- On the no-permission sentence: set `gates.institutional_access` to `true` and `download_access` to `unavailable`.
+- On the open-access sentence: set `gates.institutional_access` to `true` and keep `download_access: open_access`.
+- Blocks: nothing. Without it the project stays on the free, open-access default. Subscription strings and publisher-login downloads need it.
 
 ## topic_lock
 
@@ -62,7 +62,7 @@ Installed skill folders do not include this file. Each owning skill repeats its 
 - Owner: `search-strategy-builder`
 - Ask: "Pass search lock on the strings in 01-search/search_strings.md dated [date]? Reply with: I confirm the search lock"
 - Files: `01-search/search_strings.md`, `01-search/hit_counts.tsv`
-- Condition: every searched database has a user-pasted hit count and a search date, and exactly one string marked `- Locked: yes`. Cells still marked `[VERIFY]` block the gate.
+- Condition: every searched database has a hit count and a search date, and exactly one string marked `- Locked: yes`. A count is valid when `api_search.py --hit-counts` wrote it from the API response, or when the user pasted it for an optional subscription database. Cells still marked `[VERIFY]` block the gate.
 - On that sentence: set `gates.search_lock` to `true`
 - Blocks: `search-export-and-dedup` and every later skill
 
@@ -109,11 +109,11 @@ Record these in `LOG.md` when they happen.
 | Token | Meaning |
 |-------|---------|
 | `project_confirmed` | User confirmed `project.yaml` after setup |
-| `exports_complete` | User confirmed the raw exports in `02-records/raw/` are the full searches |
+| `exports_complete` | The raw files in `02-records/raw/` are the full searches. An agent line when every file came from a complete `api_search.py` run; a human line when manual exports are included |
 | `draft_complete` | User confirmed every outlined section has a file in `09-draft/` |
 | `single_screener` | Only one person screened. Kappa was not invented |
 | `narrative_core_confirmed` | The user confirmed which narrative records will be read. The rest stay not read |
-| `collection_checklist_confirmed` | The user confirmed the Zotero collection list against the theme list |
+| `collection_checklist_confirmed` | Only when `use_zotero` is `true`: the user confirmed the Zotero collection list against the theme list |
 | `style_brief_refreshed` | The style brief was rewritten from lawful reviews in the locked journal |
 | `notes_attached` | The user asked for note export and the attachment log was updated |
 
@@ -134,8 +134,8 @@ Before any lock question, the owning skill may show a decision card. The card ha
 | Screening | `03-screening/criteria.md`, `03-screening/screening.csv`, `03-screening/prisma_flow.md` |
 | Narrative core | `03-screening/narrative_rank.tsv`, `03-screening/core_decision.tsv`, `03-screening/not_read.tsv`, `03-screening/cap_overflow.tsv` |
 | Included set | `03-screening/included.tsv` |
-| PDFs | `04-library/pdf_status.csv`. When this computer cannot download a paper: `04-library/doi_for_upload.tsv` and the user's file in `04-library/uploads/` |
-| Collections | `04-library/collection_checklist.tsv` |
+| PDFs | `04-library/oa_check.csv`, `04-library/pdfs/`, `04-library/pdf_status.csv`, `04-library/fulltext_need.tsv`, `04-library/please_fetch.md`, `04-library/abstract_only.tsv`, and the user's files in `04-library/uploads/` |
+| Collections (optional, `use_zotero: true`) | `04-library/collection_checklist.tsv` |
 | Note export | `04-library/note_attachment_log.tsv` (only after the user asks) |
 | Notes | `05-reading/<citation_key>.md` |
 | Evidence | `evidence/evidence_table.csv` |

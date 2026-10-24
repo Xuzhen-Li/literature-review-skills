@@ -32,7 +32,7 @@ Below are the 18 skills in this repository, each with its `skills/<name>/SKILL.m
 
 ## Start here
 
-Choose the entry skill from what the user has: see `docs/START_HERE.md`. A draft goes straight to `skills/review-writing/SKILL.md`.
+Choose the entry skill from what the user has: see `docs/START_HERE.md`. A draft goes straight to `skills/review-writing/SKILL.md`. By default the agent searches free APIs and downloads open-access PDFs itself; the user is asked only for the ranked please-fetch list. Subscription databases and Zotero are optional.
 
 ## Routing
 

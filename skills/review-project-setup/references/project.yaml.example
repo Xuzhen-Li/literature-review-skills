@@ -11,11 +11,16 @@ target_journal: undecided
 language: en
 search_pubmed: true
 narrative_core_cap: 500
-download_access: unknown
+# open_access (default): the agent searches free APIs and downloads open-access PDFs itself.
+# institutional or unavailable only after the optional institutional_access sentence.
+download_access: open_access
+# Optional extras. Leave false unless the user asks for them.
+use_subscription_databases: false
+use_zotero: false
 created: 2026-10-09
 updated: 2026-10-09
 gates:
-  institutional_access: false
+  institutional_access: false   # optional; not needed for the default flow
   topic_lock: false
   search_lock: false
   inclusion_lock: false
