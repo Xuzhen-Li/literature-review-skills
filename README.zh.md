@@ -13,7 +13,7 @@
 
 | 你手头有 | 从这里开始 |
 | --- | --- |
-| 只有选题 | 输入 `start a new review on <topic>` |
+| 只有选题 | 输入 `start a new review on <topic>`（例如 `start a new review on drought responses in grapevine`，会调用 `review-project-setup`） |
 | 没有图书馆账号 | 初始化时回答 `I will use open-access sources only`；用 PubMed、OpenAlex 或 Europe PMC 检索，再用 `find_oa_pdfs.py` 下载免费全文 |
 | 自己的文献列表或 DOI 列表 | 从 Zotero 导出为 RIS，或整理成带 `doi,title,year` 表头的 CSV，运行去重时加上 `--source manual` |
 | 一份初稿 | 用 `review-writing`（不需要建项目文件夹） |
@@ -119,12 +119,6 @@ bash install.sh --target all --mode link
 ```bash
 python3 -m pytest
 ```
-
-## 快速开始
-
-输入：`start a new review on drought responses in grapevine`。
-
-这将触发 `review-project-setup`。当 `project.yaml` 生成后，输入 `what is the next step` 来调用 `review-orchestrator`。
 
 ## 项目文件夹
 
