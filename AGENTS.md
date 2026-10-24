@@ -1,6 +1,10 @@
 # AGENTS.md
 
-AGENTS.md is a guidance file for Codex and other agents. This repository provides 17 literature-review skills (stage instruction packs), `shared/` rules, and `install.sh`. To install skills into `~/.cursor/skills`, `~/.claude/skills`, or `~/.agents/skills` (which Codex reads), run `install.sh` with `--target` set to `cursor`, `claude`, `agents`, or `all` (default `all`). This file helps humans and agents locate skill paths, gates (checkpoints), and tests.
+AGENTS.md is a guidance file for Codex and other agents. This repository provides 18 literature-review skills (stage instruction packs), `shared/` rules, and `install.sh`. To install skills into `~/.cursor/skills`, `~/.claude/skills`, or `~/.agents/skills` (which Codex reads), run `install.sh` with `--target` set to `cursor`, `claude`, `agents`, or `all` (default `all`). This file helps humans and agents locate skill paths, gates (checkpoints), and tests.
+
+## Start here
+
+Pick the entry skill from what the user already has (full table: `docs/START_HERE.md`): topic only -> `review-project-setup`; own papers/DOI list -> `review-project-setup` then `search-export-and-dedup` (`--source manual`); a draft -> `review-writing` (no `project.yaml` needed); near-final manuscript -> `journal-selection`; decision letter -> `reviewer-response`; unsure -> `review-orchestrator`. No library account: gate sentence `I will use open-access sources only`, then `skills/zotero-library-sync/scripts/find_oa_pdfs.py` for legal free PDFs. Never use shadow libraries.
 
 ## Repository layout
 
@@ -14,7 +18,7 @@ AGENTS.md is a guidance file for Codex and other agents. This repository provide
 
 ## Skills
 
-Below are the 17 skills provided by this repository:
+Below are the 18 skills provided by this repository:
 
 | Skill | Path |
 |---|---|
@@ -30,6 +34,7 @@ Below are the 17 skills provided by this repository:
 | `review-project-setup` | `skills/review-project-setup/SKILL.md` |
 | `review-scoping-and-gaps` | `skills/review-scoping-and-gaps/SKILL.md` |
 | `review-section-drafter` | `skills/review-section-drafter/SKILL.md` |
+| `review-writing` | `skills/review-writing/SKILL.md` |
 | `reviewer-response` | `skills/reviewer-response/SKILL.md` |
 | `search-export-and-dedup` | `skills/search-export-and-dedup/SKILL.md` |
 | `search-strategy-builder` | `skills/search-strategy-builder/SKILL.md` |

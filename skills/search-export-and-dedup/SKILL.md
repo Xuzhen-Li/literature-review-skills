@@ -41,6 +41,10 @@ Open the database in the agent browser first. If that session is not logged in, 
 | Web of Science | Export RIS | `.ris` |
 | Scopus | Export RIS or CSV | `.ris` or `.csv` |
 | Embase, if it was searched | RIS or CSV | `.ris` or `.csv` |
+| OpenAlex (free, no login) | Search at https://openalex.org/ , Export, CSV | `.csv` |
+| Europe PMC (free, no login) | Export, RIS | `.ris` |
+
+No library account (`download_access: open_access`): PubMed, OpenAlex, and Europe PMC need no login and export directly. That set is enough for most narrative reviews; state it in the methods. Can't export at all? Paste one DOI per line into `02-records/raw/manual_YYYYMMDD.csv` with a `doi,title,year` header and use `--source manual`.
 
 The hit count in `hit_counts.tsv` should match the number of records in that file. If it does not, stop and ask the user which file is complete. Do not drop records to force a match.
 

@@ -5,7 +5,9 @@ description: >
   overclaim hedging, citation audit, and a docx export. Use when the user
   says "polish the manuscript", "fit the word limit", "overclaim", "change
   log", or "export docx". Do not use to add results, add references, choose
-  a journal, or respond to reviewers.
+  a journal, or respond to reviewers. For restructuring the argument,
+  removing paper-by-paper listing, or editing a Word file with live Zotero
+  fields, use review-writing first.
 ---
 
 # Manuscript polishing
@@ -18,7 +20,7 @@ I am manuscript polishing. I fit the draft to the locked journal's style brief a
 
 ## When to use
 
-Every outline section has a checked draft, the journal lock has been passed, and `06-exemplars/style_brief.md` says `Refreshed after journal lock: yes` for that journal. This skill edits language and format. It does not add scientific claims.
+Every outline section has a checked draft, the journal lock has been passed, and `06-exemplars/style_brief.md` says `Refreshed after journal lock: yes` for that journal. This skill edits language and format. It does not add scientific claims. If the argument itself needs restructuring, or the user supplies a Word file with live Zotero fields, run `review-writing` first; its `docx-citation-safety` reference also governs any later edit to such a file.
 
 ## Inputs (paths) / Preconditions
 

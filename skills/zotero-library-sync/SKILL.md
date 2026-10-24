@@ -25,7 +25,7 @@ I am Zotero library sync. I record a legal route for each included paper, and wh
 ## Inputs (paths) / Preconditions
 
 - `<project>/03-screening/included.tsv` and `<project>/02-records/library.csv`.
-- The user's Zotero desktop library. Import steps: https://www.zotero.org/support/adding_items_to_zotero
+- Optional: the user's Zotero desktop library (steps 1-3 and 10). Without Zotero, skip the RIS import and collections; `find_oa_pdfs.py` and `pdf_handoff.py` still work. Import steps: https://www.zotero.org/support/adding_items_to_zotero
 - Collections: https://www.zotero.org/support/collections_and_tags
 - Unpaywall API: https://unpaywall.org/products/api
 - Crossref metadata when a DOI exists but the title or year is empty: https://www.crossref.org/documentation/retrieve-metadata/
@@ -37,7 +37,16 @@ I am Zotero library sync. I record a legal route for each included paper, and wh
 1. Write `04-library/included.ris` with one RIS record per row of `included.tsv`, using `references/ris_template.md` and fields from `library.csv` (abstract, authors, journal). Skip a field that is empty. Do not create a DOI.
 2. Tell the user to import that RIS file (Zotero: File, Import) into a new collection named `review-included`. The user clicks through the import. Do not ask them to import the whole pre-screening library into this collection.
 3. From the locked scope, propose at most eight thematic collection names. Write them in `04-library/collections.md` as a two-column list: collection name, and the `record_id`s that belong there. A record may sit in more than one collection. The user creates the collections and drags items. Search inside Zotero by DOI or PMID (https://www.zotero.org/support/searching) when the import needs a check.
-4. For each included DOI, query Unpaywall. URL-encode nothing inside the DOI path beyond what the docs show; the usual form is:
+4. Fast path (no account, no API key, no Zotero needed): run the open-access finder on the included list. It asks OpenAlex first and Unpaywall only when `LRS_CONTACT_EMAIL` is set, and saves only legal OA PDFs:
+
+```bash
+python3 <suite>/skills/zotero-library-sync/scripts/find_oa_pdfs.py \
+  <project>/03-screening/included.tsv \
+  -o <project>/04-library/oa_check.csv \
+  --download <project>/04-library/uploads
+```
+
+Use its `oa_status`, `pdf_url`, and `local_path` columns to fill `pdf_status.csv` (step 7): a saved file is `user_has_pdf` with `retrieval_route` `unpaywall` or `repository`; `closed` rows go to the upload list in step 8. If the script cannot reach the network, fall back to the manual Unpaywall query below. Manual query, one DOI at a time: URL-encode nothing inside the DOI path beyond what the docs show; the usual form is:
 
 ```text
 https://api.unpaywall.org/v2/<doi>?email=<user email>
@@ -49,7 +58,7 @@ Read `is_oa`, `oa_status` (`gold`, `hybrid`, `green`, `bronze`, `closed`), and `
 6. Choose a retrieval route in this order, and stop at the first that works.
    - PDF already attached in their Zotero library, or already in `04-library/uploads/`.
    - Unpaywall `url_for_pdf` when `is_oa` is true. The user downloads it.
-   - The DOI resolver `https://doi.org/<doi>` when `download_access` is `institutional`.
+   - The DOI resolver `https://doi.org/<doi>` when `download_access` is `institutional`. Skip this route for `open_access` and `unavailable`.
    - A green repository URL that Unpaywall listed.
    - If the page refuses the download, the session has no entitlement, or `download_access` is `unavailable`, stop. Set `pdf_status` to `awaiting_user_upload`. Do not keep driving the desktop to reach a copy, and do not open a shadow library.
    - Interlibrary loan or the user's document-delivery service, only when they ask. Record `requested_ill`. They send the request.
@@ -116,7 +125,7 @@ No project lock. Stop when a paper cannot be downloaded and hand the user `doi_f
 
 - Row count of `pdf_status.csv` equals row count of `included.tsv`.
 - Every DOI in the status file matches `included.tsv`.
-- `oa_status` is only a value Unpaywall returned, or `not_checked`.
+- `oa_status` is only a value OpenAlex or Unpaywall returned, or `not_checked`.
 - No URL points at an unauthorized copy. If the user pastes one, refuse to store it and record `no_legal_copy_found`.
 - `pdf_url` is empty when `pdf_status` is `no_legal_copy_found` or `requested_ill`.
 - `check_collections.py --ready` prints `OK collections` before reading starts.

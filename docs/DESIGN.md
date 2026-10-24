@@ -69,7 +69,7 @@ Language: **English only** (instructions, templates, file names, outputs).
   LOG.md                  # append-only decision log (date, skill, decision, by whom)
 ```
 
-## Skills (17)
+## Skills (18)
 
 Directory name = skill `name` (kebab-case). Each lives in `skills/<name>/`.
 
@@ -92,6 +92,7 @@ Directory name = skill `name` (kebab-case). Each lives in `skills/<name>/`.
 | 14 | `figure-permissions` | For each reused/adapted item: determine license (CC-BY etc.), RightsLink or publisher request, request email template, caption credit lines, risk list. | `12-permissions/permissions_log.csv` |
 | 15 | `submission-package` | Cover letter as markdown and a word-processor file, a portal field guide quoted from the author page, title page, declarations (funding, COI, data, AI-use disclosure per journal), suggested reviewers (with conflict check), file checklist and upload order. Highlights, and a visual abstract as an original SVG plus PDF, only when the author page requires them. | `13-submission/` |
 | 16 | `reviewer-response` | Parse decision letter, number every comment, plan actions, draft point-by-point response with exact change locations; never claim a change that was not made. | `14-revision/response_to_reviewers.docx` |
+| on request | `review-writing` | Revise an existing review (markdown or docx): inventory, argument diagnosis and blueprint, mechanism/problem-chain restructure, claim-mechanism-evidence-boundary-synthesis paragraphs, template-prose removal, live Zotero fields, page-by-page render QC. Modes: language, structural, full-word. | revised manuscript, `*.orig.*` backup, change log, comment table, author-check list |
 
 ## Per-skill file contract
 

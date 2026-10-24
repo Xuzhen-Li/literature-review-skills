@@ -29,11 +29,16 @@ Use this skill at the start of a session and whenever the user asks what to do n
 
 `<project>` is the review folder. If the user gives a path, use it. Else if `./project.yaml` exists, use `.`. Else route to `review-project-setup` and ask where to create the folder. Do not guess a path.
 
+## Entry without a project
+
+If there is no `project.yaml`, ask what the user already has before routing to setup (table in `docs/START_HERE.md` at the suite root): a draft goes to `review-writing`, a near-final manuscript to `journal-selection`, a decision letter to `reviewer-response`. Only a topic, or their own paper set, goes to `review-project-setup`.
+
 ## Procedure (numbered steps)
 
 1. Read `project.yaml`. A gate is passed only when its line is the YAML boolean `true` (`topic_lock: true`). Missing, `false`, `"true"`, or `yes` means not passed.
 2. Read `LOG.md` from the bottom. Do not treat an agent line as a user confirmation. Gate lines end with `| human`.
 3. Walk routing rows 1 through 17 in order. Row 0 is this skill and is never the destination. The first row whose condition is true is the next skill. Later files do not cancel an earlier failed gate: if `09-draft/` has prose but `topic_lock` is not true, route back to `review-scoping-and-gaps`.
+   `review-writing` is not a routing row. Name it as the next skill only when the user asks to rewrite or restructure an existing draft, fix paper-by-paper listing or template prose, or revise a Word file with live citations; it still respects every earlier gate in a project.
 4. Print the status report (template below) and stop. Name the skill and the first action from that skill. Do not start a second skill in this turn.
 5. If the user then confirms a gate in this chat, record it only when every file named for that gate in `shared/gates.md` already exists and `scripts/check_gate_phrase.py` prints `OK gate phrase` for that reply. The reply must be the exact sentence, as the whole message or as its only line. Set the boolean, append one log line, and route again. Otherwise leave the boolean false. `institutional_access` has no required file; the homepage was opened in `review-project-setup`.
 

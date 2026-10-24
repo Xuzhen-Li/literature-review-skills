@@ -5,11 +5,11 @@ alwaysApply: false
 
 # Literature review skills
 
-This repository is the source of 17 literature-review skills (instruction packs for each review stage). A Cursor rule tells Cursor how to handle a project. Cursor loads installed skills, and this rule guides agents to in-repo paths and shared gates (yes/no checkpoints the human must pass before later stages unlock).
+This repository is the source of 18 literature-review skills (instruction packs for each review stage). A Cursor rule tells Cursor how to handle a project. Cursor loads installed skills, and this rule guides agents to in-repo paths and shared gates (yes/no checkpoints the human must pass before later stages unlock).
 
 ## Skills
 
-Below are the 17 skills in this repository, each with its `skills/<name>/SKILL.md` entry point:
+Below are the 18 skills in this repository, each with its `skills/<name>/SKILL.md` entry point:
 
 - `skills/exemplar-review-analysis/SKILL.md`
 - `skills/figure-permissions/SKILL.md`
@@ -23,11 +23,16 @@ Below are the 17 skills in this repository, each with its `skills/<name>/SKILL.m
 - `skills/review-project-setup/SKILL.md`
 - `skills/review-scoping-and-gaps/SKILL.md`
 - `skills/review-section-drafter/SKILL.md`
+- `skills/review-writing/SKILL.md`
 - `skills/reviewer-response/SKILL.md`
 - `skills/search-export-and-dedup/SKILL.md`
 - `skills/search-strategy-builder/SKILL.md`
 - `skills/submission-package/SKILL.md`
 - `skills/zotero-library-sync/SKILL.md`
+
+## Start here
+
+Choose the entry skill from what the user has: see `docs/START_HERE.md`. A draft goes straight to `skills/review-writing/SKILL.md`.
 
 ## Routing
 

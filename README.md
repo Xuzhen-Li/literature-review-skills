@@ -6,10 +6,26 @@ An agent-agnostic skill suite that takes a researcher from a vague topic to a re
 
 This suite is for researchers writing a narrative, systematic, scoping, or umbrella review who want a repeatable folder layout and an agent that will not skip eligibility criteria, search reporting, or permissions.
 
+## Quick start  [待Gemini润色]
+
+1. Install for your tool: `bash install.sh --target claude` (or `cursor`, `codex`, `all`). ChatGPT and DeepSeek users: see `platform/README.md`.
+2. Open [docs/START_HERE.md](docs/START_HERE.md) and pick the row for what you already have:
+
+| You have | Start with |
+|---|---|
+| Only a topic | `start a new review on <topic>` |
+| No library account | answer `I will use open-access sources only` at setup; PubMed/OpenAlex/Europe PMC + `find_oa_pdfs.py` |
+| Your own papers or a DOI list | set up the project, import your file with `--source manual` |
+| A draft | `review-writing` (no project folder needed) |
+| A near-final manuscript | `journal-selection` → `manuscript-polishing` → `submission-package` |
+| Reviewer comments | `reviewer-response` |
+
+3. Lost? Say `what is the next step` (`review-orchestrator`).
+
 ## Features
 
-- Seventeen skills, from project setup through a point-by-point reviewer response. `review-orchestrator` reads `project.yaml` and routes to the next one.
-- Seven human gates. The first opens the database homepage. The others lock the topic, search strings, inclusion criteria, outline, journal, and final submit. Each lock accepts one exact sentence. The agent records it.
+- Eighteen skills, from project setup through a point-by-point reviewer response. `review-orchestrator` reads `project.yaml` and routes to the next one.
+- Seven human gates. The first records whether you have a library login, have no download permission, or will use open-access sources only (no account needed). The others lock the topic, search strings, inclusion criteria, outline, journal, and final submit. Each lock accepts one exact sentence. The agent records it.
 - An evidence table. Draft sentences map to evidence ids or stay marked `[NEEDS SOURCE]`.
 - A tested deduplicator (`DOI`, then `PMID`, then normalized title and year) that writes PRISMA identification counts from RIS, PubMed NBIB, and CSV exports.
 - An identifier checker (`skills/search-export-and-dedup/scripts/verify_ids.py`) that resolves DOIs (Digital Object Identifier strings usually starting with 10. that name papers) via Crossref (a DOI registration agency) and PMIDs (PubMed numeric ids) via NCBI (the US National Center for Biotechnology Information), writing flagged results (`[VERIFY]`) to `identifier_check.csv` without modifying the input file.
@@ -70,6 +86,7 @@ flowchart TD
 | 14 | `figure-permissions` | For each reused or adapted item, record the license, RightsLink or publisher request, credit line, and remaining risk. |
 | 15 | `submission-package` | Cover letter (markdown and docx), a field guide quoted from the author page, title page, declarations, suggested reviewers with a conflict check, and the upload checklist. Highlights, and a visual abstract as an original image, are drafted only when that page requires them. |
 | 16 | `reviewer-response` | Number every comment and draft a point-by-point response that cites only changes that were made. |
+| on request | `review-writing` | Revise an existing review draft or Word file: inventory, diagnose the argument, restructure by mechanism or question, remove template prose, keep Zotero fields live, and check every rendered page. Works inside a project or on a standalone manuscript. |
 
 ## Install
 

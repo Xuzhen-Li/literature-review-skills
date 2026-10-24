@@ -27,6 +27,7 @@ The gates are `institutional_access`, `topic_lock`, `search_lock`, `inclusion_lo
 |------|----------------|
 | `institutional_access` | `I have confirmed institutional login` |
 | `institutional_access` when this computer cannot download | `I have no download permission on this computer` |
+| `institutional_access` with no library account at all | `I will use open-access sources only` |
 | `topic_lock` | `I confirm the topic lock` |
 | `search_lock` | `I confirm the search lock` |
 | `inclusion_lock` | `I confirm the inclusion lock` |
@@ -34,17 +35,18 @@ The gates are `institutional_access`, `topic_lock`, `search_lock`, `inclusion_lo
 | `journal_lock` | `I confirm the journal lock` |
 | `final_submit` | `I confirm the package is ready for me to submit` |
 
-The second homepage sentence still sets `gates.institutional_access` to `true`. It also sets `download_access: unavailable`. The first sentence sets `download_access: institutional`.
+The second homepage sentence still sets `gates.institutional_access` to `true`. It also sets `download_access: unavailable`. The first sentence sets `download_access: institutional`. The third sentence sets `download_access: open_access`: search only free databases (PubMed, OpenAlex, Europe PMC) and retrieve only open-access PDFs; paywalled papers go on the upload list.
 
 Installed skill folders do not include this file. Each owning skill repeats its own pass condition.
 
 ## institutional_access
 
 - Owner: `review-project-setup`
-- Ask the user to open https://www.webofscience.com/ and, when PubMed will be searched, https://pubmed.ncbi.nlm.nih.gov/ , then to reply with one of the two sentences in the table.
+- Ask which case applies. With a library account, ask the user to open https://www.webofscience.com/ (and https://pubmed.ncbi.nlm.nih.gov/ when PubMed will be searched). Without one, no homepage is needed. Then ask for one of the three sentences in the table.
 - Files that must already exist: none. This gate is recorded before the rest of `project.yaml` is used for scoping.
 - On the login sentence: set `gates.institutional_access` to `true` and `download_access` to `institutional`.
 - On the no-permission sentence: set `gates.institutional_access` to `true` and `download_access` to `unavailable`. Later PDF retrieval gives DOIs for the user to upload.
+- On the open-access sentence: set `gates.institutional_access` to `true` and `download_access` to `open_access`. `search-strategy-builder` writes strings for PubMed and OpenAlex only, unless the user adds a database later.
 - Blocks: every later skill
 
 ## topic_lock

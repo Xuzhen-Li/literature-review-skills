@@ -14,6 +14,7 @@ from typing import Optional, Sequence
 PHRASES = {
     "institutional_access": "I have confirmed institutional login",
     "no_download_permission": "I have no download permission on this computer",
+    "open_access_only": "I will use open-access sources only",
     "topic_lock": "I confirm the topic lock",
     "search_lock": "I confirm the search lock",
     "inclusion_lock": "I confirm the inclusion lock",
