@@ -45,7 +45,7 @@ python3 <suite>/skills/zotero-library-sync/scripts/find_oa_pdfs.py \
 
 It asks OpenAlex, Unpaywall (only with `LRS_CONTACT_EMAIL`), Europe PMC, Semantic Scholar, and arXiv in that order. When a download fails it tries the next source's link. It saves only legal OA copies (http/https, up to 100 MB) as `<record_id>-<hash>.pdf`, never overwrites a file, and refuses to overwrite `-o` without `--force`. Exit 1 means a lookup or download failed for some rows; the rows are still written. Run it again later for those rows before treating them as closed.
 
-   Agent retry (default, never skip). Many OA links refuse a script (403, an HTML page, 429) but open in your own browser or web-fetch tool. Retry every paper without a PDF yourself before anyone else is asked:
+   Agent retry (default, never skip). Many OA links block scripts (403, an HTML page, 429) but open in your own browser or web-fetch tool. Retry every paper without a PDF yourself before asking anyone else:
 
 ```bash
 python3 <suite>/skills/zotero-library-sync/scripts/agent_retry.py worklist \
@@ -53,7 +53,7 @@ python3 <suite>/skills/zotero-library-sync/scripts/agent_retry.py worklist \
   --incoming <project>/04-library/agent_pdfs --openalex-locations
 ```
 
-   For each row, open the `candidate_urls` in order with your own tools: the failed OA link, other OpenAlex locations (institutional repositories, preprint versions), the Europe PMC / PMC full text, known publisher PDF URL patterns, then the landing page and its PDF link. Save a real PDF at `save_as`. If none works, set `agent_retry` to `failed` and `agent_reason` to what happened (for example `403 in browser; Cloudflare check`). Always write the tool you used in `agent_retry_method` (`browser`, `web_fetch`, `curl`, ...); `please_fetch.md` shows it. Papers without a DOI are listed too when they have a `pdf_url` or `landing_url`. Legal OA copies only; never a shadow library; never type a password, captcha, or second factor. Then ingest:
+   For each row, open the `candidate_urls` in order with your own tools: the failed OA link, other OpenAlex locations (institutional repositories, preprint versions), the Europe PMC / PMC full text, known publisher PDF URL patterns, and then the landing page and its PDF link. Save a real PDF at `save_as`. If none work, set `agent_retry` to `failed` and `agent_reason` to what happened (for example `403 in browser; Cloudflare check`). Always record the tool you used in `agent_retry_method` (`browser`, `web_fetch`, `curl`, ...); `please_fetch.md` shows it. Papers without a DOI are also listed when they have a `pdf_url` or `landing_url`. Use legal OA copies only; never use a shadow library, and never type a password, captcha, or second factor. Then ingest the files:
 
 ```bash
 python3 <suite>/skills/zotero-library-sync/scripts/agent_retry.py accept \
@@ -62,14 +62,14 @@ python3 <suite>/skills/zotero-library-sync/scripts/agent_retry.py accept \
   -o <project>/04-library/oa_after_retry.csv
 ```
 
-   `accept` counts a file only if it starts with `%PDF-`, copies it into `pdfs/` without overwriting, and adds `agent_retry` (`got` / `failed`) and `agent_reason` to every retried row. Exit 1 lists rows you have neither saved nor marked failed; the output file is still written. Finish those rows, then run the same `accept` command again with `--force` (without it the second run stops with exit 2 because the output exists). If a file you saved is not a PDF, the row becomes `failed` and `not a PDF` is added after your own reason.
+   `accept` counts a file only if it starts with `%PDF-`, copies it into `pdfs/` without overwriting, and adds `agent_retry` (`got` / `failed`) and `agent_reason` to every retried row. Exit 1 lists rows you have neither saved nor marked failed; the output file is still written. Finish those rows, then run the same `accept` command again with `--force` (without it, the second run stops with exit 2 because the output file already exists). If a saved file is not a PDF, the row becomes `failed` and `not a PDF` is appended to your reason.
 2. Write `04-library/pdf_status.csv` with one row per included `record_id`. Header:
 
 ```text
 record_id,citation_key,doi,pmid,title,oa_status,pdf_url,retrieval_route,pdf_status,local_path,checked_on,notes
 ```
 
-Copy `oa_status`, `pdf_url`, and `local_path` from `oa_after_retry.csv`, and put its `agent_retry` and `agent_reason` in `notes`. A saved file is `pdf_status` `user_has_pdf` with `retrieval_route` `unpaywall` or `repository` (`repository` covers Europe PMC, Semantic Scholar, and arXiv; name the source in `notes`). A row with no saved file is `no_legal_copy_found` with route `none`. When `download_access` is `institutional`, you may first try `https://doi.org/<doi>` in the logged-in browser (route `publisher`); the user types any password, captcha, or second factor, never you. `retrieval_route` is `zotero`, `unpaywall`, `publisher`, `repository`, `ill`, `user_upload`, or `none`. `pdf_status` is `available`, `requested_ill`, `no_legal_copy_found`, `user_has_pdf`, `awaiting_user_upload`, or `user_uploaded`. `checked_on` is today's date. If there is no DOI, set `oa_status` to `not_checked` and `notes` to `no DOI`; do not invent a DOI. Crossref is for filling a blank title or year on a known DOI (`https://api.crossref.org/works/<doi>`), not for guessing one.
+Copy `oa_status`, `pdf_url`, and `local_path` from `oa_after_retry.csv`, and put its `agent_retry` and `agent_reason` into `notes`. A saved file is `pdf_status` `user_has_pdf` with `retrieval_route` `unpaywall` or `repository` (`repository` covers Europe PMC, Semantic Scholar, and arXiv; name the source in `notes`). A row with no saved file is `no_legal_copy_found` with route `none`. When `download_access` is `institutional`, you may first try `https://doi.org/<doi>` in the logged-in browser (route `publisher`); the user types any password, captcha, or second factor, never you. `retrieval_route` is `zotero`, `unpaywall`, `publisher`, `repository`, `ill`, `user_upload`, or `none`. `pdf_status` is `available`, `requested_ill`, `no_legal_copy_found`, `user_has_pdf`, `awaiting_user_upload`, or `user_uploaded`. `checked_on` is today's date. If there is no DOI, set `oa_status` to `not_checked` and `notes` to `no DOI`; do not invent a DOI. Crossref is for filling a blank title or year on a known DOI (`https://api.crossref.org/works/<doi>`), not for guessing one.
 3. Triage every included paper that has no PDF. Write `04-library/fulltext_need.tsv` with the header `record_id,doi,need,why,rank`:
    - `essential`: the review cannot be written honestly from the abstract alone. For example, it is a core study whose methods, effect sizes, or figures you must read, the only source for a claim in the locked scope, or a key paper that defines the field. `why` is one clear sentence for the user, and `rank` starts at 1 for the most important paper.
    - `useful`: the full text would help, but the abstract is enough to make the point.
@@ -86,7 +86,7 @@ python3 <suite>/skills/zotero-library-sync/scripts/please_fetch.py \
 ```
 
 This lists only `essential` papers that still have no PDF after your own retry and are not yet in `uploads/`, ranked, up to `--max` (default 15). All other missing papers go to `abstract_only.tsv`. Exit 2 means a missing paper has no triage row, or a triage row is malformed; fix `fulltext_need.tsv` and run the script again. If essential papers exceed `--max`, tighten your ranking instead of raising the cap.
-5. Show the user `04-library/please_fetch.md` as is: the numbered DOIs, why each paper matters, and the file name to save it under: `04-library/uploads/<record_id>.pdf`, or for a row without `record_id` the sanitized DOI plus a short hash (e.g. `10.1000_x-1a2b3c4d.pdf`), exactly as the list prints it. Do not ask them to fetch anything else. If the list is empty, say so and move on. Do not wait for uploads: continue reading, and cite any paper that never arrives from its abstract only.
+5. Show `04-library/please_fetch.md` to the user as is: the numbered DOIs, why each paper matters, and the target file name (`04-library/uploads/<record_id>.pdf`, or for a row without `record_id`, the sanitized DOI plus a short hash like `10.1000_x-1a2b3c4d.pdf`, exactly as printed in the list). Do not ask the user to fetch anything else. If the list is empty, say so and move on. Do not wait for uploads: continue reading, and cite any paper that never arrives from its abstract only.
 6. When the user says they saved files, record them:
 
 ```bash
@@ -127,10 +127,10 @@ No project lock and no wait. The user is asked only for the papers on `please_fe
 ## Outputs (exact paths + formats)
 
 - `04-library/oa_check.csv` and `04-library/pdfs/<record_id>-<hash>.pdf` — written by `find_oa_pdfs.py`
-- `04-library/agent_retry.tsv` (`record_id`, `doi`, `title`, `landing_url`, `candidate_urls`, `save_as`, `agent_retry`, `agent_reason`, `agent_retry_method`), `04-library/agent_pdfs/`, and `04-library/oa_after_retry.csv` (oa_check columns plus `agent_retry`, `agent_reason`, `agent_retry_method`) — the agent retry step
+- `04-library/agent_retry.tsv` (`record_id`, `doi`, `title`, `landing_url`, `candidate_urls`, `save_as`, `agent_retry`, `agent_reason`, `agent_retry_method`), `04-library/agent_pdfs/`, and `04-library/oa_after_retry.csv` (oa_check columns plus `agent_retry`, `agent_reason`, `agent_retry_method`) — files from the agent retry step
 - `04-library/pdf_status.csv` — header in step 2, one row per included record
 - `04-library/fulltext_need.tsv` — `record_id`, `doi`, `need`, `why`, `rank`, one row per included paper without a PDF
-- `04-library/please_fetch.md` and `please_fetch.tsv` — regenerated on every `please_fetch.py` run (do not hand-edit; change `fulltext_need.tsv` and rerun); the ranked list for the user (`priority`, `record_id`, `doi`, `title`, `why`, `save_as`, `landing_url`, `pdf_url`; `pdf_url` is an open-access link that refused the script, shown so the user can try it in a browser first)
+- `04-library/please_fetch.md` and `please_fetch.tsv` — regenerated on every `please_fetch.py` run (do not edit by hand; update `fulltext_need.tsv` and rerun); the ranked list for the user (`priority`, `record_id`, `doi`, `title`, `why`, `save_as`, `landing_url`, `pdf_url`; `pdf_url` is an open-access link that blocked the script, shown so the user can try it in a browser first)
 - `04-library/abstract_only.tsv` — also regenerated on every run; missing papers read from the abstract; report them as a limitation
 - `04-library/uploads/<record_id>.pdf` — placed by the user under the `save_as` name (for a plain DOI list without `record_id`, the sanitized DOI plus a short hash, e.g. `10.1000_x-1a2b3c4d.pdf`); a file that does not start with `%PDF-`, such as a saved login page, does not count
 - Only when `use_zotero` is `true`: `04-library/included.ris`, `04-library/collections.md`, `04-library/collection_checklist.tsv` (`theme`, `record_id`, `user_confirmed`)
