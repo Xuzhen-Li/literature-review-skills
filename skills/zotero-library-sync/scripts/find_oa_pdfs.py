@@ -4,8 +4,11 @@
 Input: any .tsv/.csv with a `doi` column (optional `record_id`, `title`), e.g.
 03-screening/included.tsv, 02-records/library.csv, or a plain list with one
 DOI (or https://doi.org/ URL) per line.
-Lookup order per DOI: OpenAlex (free, no key) -> Unpaywall (only when
-LRS_CONTACT_EMAIL is set, because Unpaywall requires an email). Writes
+Lookup order per DOI (all free, no key): OpenAlex -> Unpaywall (only when
+LRS_CONTACT_EMAIL is set, because Unpaywall requires an email) -> Europe PMC
+(PMC open-access copy) -> Semantic Scholar (openAccessPdf; S2_API_KEY optional)
+-> arXiv (DOIs 10.48550/arXiv.*). With --download, a PDF link that fails is
+not the end: the next source's link is tried. Writes
 oa_check.csv with one row per input row (refuses to overwrite without --force).
 With --download DIR it saves each found OA PDF (http/https only, size-capped)
 as DIR/<record_id or doi>-<hash>.pdf; it never overwrites a file.
@@ -91,6 +94,47 @@ def unpaywall(doi: str, get: Callable[[str], dict]) -> Optional[dict]:
             "title": data.get("title") or ""}
 
 
+def europepmc(doi: str, get: Callable[[str], dict]) -> Optional[dict]:
+    url = ("https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&resultType=lite&query="
+           + urllib.parse.quote(f'DOI:"{doi}"'))
+    res = ((get(url).get("resultList") or {}).get("result") or [])
+    if not res:
+        raise NotFound(url)
+    r = res[0]
+    pmcid = r.get("pmcid") or ""
+    is_oa = r.get("isOpenAccess") == "Y"
+    pdf = f"https://europepmc.org/articles/{pmcid}?pdf=render" if (is_oa and pmcid) else ""
+    return {"is_oa": is_oa, "oa_status": "pmc_oa" if pdf else ("" if is_oa else "closed"),
+            "pdf_url": pdf, "landing_url": f"https://europepmc.org/article/PMC/{pmcid}" if pmcid else "",
+            "title": r.get("title") or ""}
+
+
+def semanticscholar(doi: str, get: Callable[[str], dict]) -> Optional[dict]:
+    # S2_API_KEY is optional; the shared keyless pool is rate-limited but works.
+    data = get("https://api.semanticscholar.org/graph/v1/paper/DOI:" + urllib.parse.quote(doi, safe="/")
+               + "?fields=title,isOpenAccess,openAccessPdf")
+    pdf = (data.get("openAccessPdf") or {}).get("url") or ""
+    return {"is_oa": bool(data.get("isOpenAccess") or pdf), "oa_status": "s2_oa" if pdf else "",
+            "pdf_url": pdf, "landing_url": "", "title": data.get("title") or ""}
+
+
+_ARXIV_DOI = re.compile(r"^10\.48550/arxiv\.(.+)$", re.I)
+
+
+def arxiv(doi: str, get: Callable[[str], dict]) -> Optional[dict]:
+    """No request: arXiv DOIs map straight to the PDF URL."""
+    m = _ARXIV_DOI.match(doi)
+    if not m:
+        return None
+    aid = m.group(1)
+    return {"is_oa": True, "oa_status": "green", "pdf_url": f"https://arxiv.org/pdf/{aid}",
+            "landing_url": f"https://arxiv.org/abs/{aid}", "title": ""}
+
+
+# Names, resolved at call time so tests can patch a single lookup.
+DEFAULT_LOOKUPS = ("openalex", "unpaywall", "europepmc", "semanticscholar", "arxiv")
+
+
 def read_rows(path: Path) -> list[dict]:
     text = path.read_text(encoding="utf-8-sig")
     lines = text.splitlines()
@@ -130,7 +174,8 @@ def download(url: str, dest: Path, timeout: int = 60, limit: int = MAX_PDF_BYTES
 
 
 def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path] = None,
-        pause: float = 0.2) -> tuple[list[dict], dict]:
+        pause: float = 0.2, lookups: Optional[Sequence[str]] = None) -> tuple[list[dict], dict]:
+    names = tuple(lookups if lookups is not None else DEFAULT_LOOKUPS)
     out = []
     stats = {"lookup_errors": 0, "not_checked": 0, "download_failed": 0}
     for row in rows:
@@ -145,7 +190,9 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
         # (API messages, titles) into note before the status decision below,
         # except the error branch, which appends {exc} (and also sets errored).
         hit, not_found, errored = None, 0, False
-        for name, fn in (("openalex", openalex), ("unpaywall", unpaywall)):
+        saved, dl_errors, tried = False, [], set()
+        for name in names:
+            fn = globals()[name]
             try:
                 res = fn(doi, get)
             except NotFound:
@@ -161,8 +208,23 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
                 continue
             if hit is None or (res["pdf_url"] and not hit["pdf_url"]):
                 hit, rec["source"] = res, name
-            if hit["pdf_url"]:
+            if not res["pdf_url"]:
+                continue
+            if not out_dir:
                 break
+            if res["pdf_url"] in tried:
+                continue
+            tried.add(res["pdf_url"])
+            dest = out_dir / safe_name(rec)
+            try:
+                status = fetch(res["pdf_url"], dest)
+            except Exception as exc:
+                status = f"download failed: {exc}"
+            if status in ("saved", "exists, not overwritten"):
+                hit, rec["source"], rec["local_path"], saved = res, name, str(dest), True
+                rec["note"] = (rec["note"] + " " + status).strip()
+                break
+            dl_errors.append(f"{name}: {status}")
         if hit:
             rec.update(is_oa="yes" if hit["is_oa"] else "no",
                        oa_status=hit["oa_status"] or ("closed" if not hit["is_oa"] else ""),
@@ -172,16 +234,9 @@ def run(rows: list[dict], get=http_json, fetch=download, out_dir: Optional[Path]
             rec["oa_status"] = "not_found" if not_found and not errored else "not_checked"
             if rec["oa_status"] == "not_checked":
                 stats["not_checked"] += 1
-        if out_dir and rec["pdf_url"]:
-            dest = out_dir / safe_name(rec)
-            try:
-                status = fetch(rec["pdf_url"], dest)
-            except Exception as exc:
-                status = f"download failed: {exc}"
-                stats["download_failed"] += 1
-            if status in ("saved", "exists, not overwritten"):
-                rec["local_path"] = str(dest)
-            rec["note"] = (rec["note"] + " " + status).strip()
+        if dl_errors and not saved:
+            stats["download_failed"] += 1
+            rec["note"] = (rec["note"] + " " + "; ".join(dl_errors)).strip()
         out.append(rec)
         time.sleep(pause)
     return out, stats

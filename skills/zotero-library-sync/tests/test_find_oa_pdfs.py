@@ -23,6 +23,21 @@ def no_email(monkeypatch):
     monkeypatch.delenv("LRS_CONTACT_EMAIL", raising=False)
 
 
+FULL_CHAIN = f.DEFAULT_LOOKUPS
+
+
+@pytest.fixture(autouse=True)
+def legacy_lookups(monkeypatch):
+    # Tests written for the OpenAlex -> Unpaywall chain keep that chain;
+    # tests that take the all_lookups fixture get the full default list back.
+    monkeypatch.setattr(f, "DEFAULT_LOOKUPS", ("openalex", "unpaywall"))
+
+
+@pytest.fixture
+def all_lookups(legacy_lookups, monkeypatch):
+    monkeypatch.setattr(f, "DEFAULT_LOOKUPS", FULL_CHAIN)
+
+
 def test_rows_and_routes(tmp_path):
     saved = []
     rows = [{"record_id": "R0001", "doi": "https://doi.org/10.1/OPEN"},
@@ -242,3 +257,84 @@ def test_main_exit_1_on_not_checked(tmp_path, monkeypatch):
     out = tmp_path / "oa.csv"
     assert f.main([str(inp), "-o", str(out)]) == 1
     assert "not_checked" in out.read_text()
+
+
+# ---- extra free sources (Europe PMC, Semantic Scholar, arXiv) ----
+
+def _multi_get(table):
+    def get(url):
+        for key, val in table.items():
+            if key in url:
+                if isinstance(val, Exception):
+                    raise val
+                return val
+        raise f.NotFound(url)
+    return get
+
+
+EPMC_OA = {"resultList": {"result": [{"pmcid": "PMC123", "isOpenAccess": "Y", "title": "T"}]}}
+OA_CLOSED = {"title": "C", "open_access": {"is_oa": False, "oa_status": "closed"}}
+
+
+def test_default_chain_order():
+    assert FULL_CHAIN == ("openalex", "unpaywall", "europepmc", "semanticscholar", "arxiv")
+
+
+def test_europepmc_fills_pdf_when_openalex_closed(all_lookups):
+    get = _multi_get({"openalex": OA_CLOSED, "europepmc": EPMC_OA})
+    out, stats = f.run([{"doi": "10.1/c"}], get=get, pause=0)
+    assert out[0]["source"] == "europepmc"
+    assert out[0]["pdf_url"] == "https://europepmc.org/articles/PMC123?pdf=render"
+    assert stats == {"lookup_errors": 0, "not_checked": 0, "download_failed": 0}
+
+
+def test_europepmc_no_hit_is_not_found():
+    with pytest.raises(f.NotFound):
+        f.europepmc("10.1/x", lambda u: {"resultList": {"result": []}})
+
+
+def test_europepmc_not_oa_has_no_pdf():
+    r = f.europepmc("10.1/x", lambda u: {"resultList": {"result": [{"pmcid": "PMC9", "isOpenAccess": "N"}]}})
+    assert r["pdf_url"] == "" and r["is_oa"] is False
+
+
+def test_semanticscholar_pdf():
+    seen = []
+    r = f.semanticscholar("10.1/x", lambda u: seen.append(u) or {"openAccessPdf": {"url": "https://s2/x.pdf"}})
+    assert r["pdf_url"] == "https://s2/x.pdf" and "paper/DOI:10.1/x" in seen[0]
+
+
+def test_arxiv_doi_maps_without_request():
+    def get(u):
+        raise AssertionError("no request expected")
+    r = f.arxiv("10.48550/arxiv.2106.15928", get)
+    assert r["pdf_url"] == "https://arxiv.org/pdf/2106.15928"
+    assert f.arxiv("10.1/x", get) is None
+
+
+def test_failed_download_falls_through_to_next_source(tmp_path, all_lookups):
+    get = _multi_get({"openalex": {"title": "O", "open_access": {"is_oa": True, "oa_status": "gold"},
+                                   "best_oa_location": {"pdf_url": "https://publisher/blocked.pdf"}},
+                      "europepmc": EPMC_OA})
+    tried = []
+
+    def fetch(url, dest):
+        tried.append(url)
+        if "publisher" in url:
+            raise f.DownloadError("403")
+        return "saved"
+    out, stats = f.run([{"record_id": "R1", "doi": "10.1/y"}], get=get, fetch=fetch, out_dir=tmp_path, pause=0)
+    assert tried == ["https://publisher/blocked.pdf", "https://europepmc.org/articles/PMC123?pdf=render"]
+    assert out[0]["local_path"] and out[0]["source"] == "europepmc"
+    assert stats["download_failed"] == 0
+
+
+def test_all_downloads_fail_counts_once(tmp_path, all_lookups):
+    get = _multi_get({"openalex": {"open_access": {"is_oa": True}, "best_oa_location": {"pdf_url": "https://a/1.pdf"}},
+                      "europepmc": EPMC_OA, "semanticscholar": {"openAccessPdf": {"url": "https://a/1.pdf"}}})
+
+    def fetch(url, dest):
+        raise f.DownloadError("blocked")
+    out, stats = f.run([{"doi": "10.1/z"}], get=get, fetch=fetch, out_dir=tmp_path, pause=0)
+    assert stats["download_failed"] == 1 and not out[0]["local_path"]
+    assert out[0]["note"].count("blocked") == 2  # duplicate URL tried once
