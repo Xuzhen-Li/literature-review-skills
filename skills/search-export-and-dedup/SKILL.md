@@ -14,7 +14,7 @@ description: >
 
 On first use in a project, say this verbatim:
 
-I am search export and deduplication. I download the search results from free databases myself, merge them, and I do not drop records to force the hit counts to match. You do not need to export anything.
+I am search export and deduplication. I download search results from free databases myself, merge them, and never drop records just to make the hit counts match. You do not need to export anything.
 
 ## When to use
 
@@ -42,13 +42,13 @@ python3 skills/search-export-and-dedup/scripts/api_search.py \
   --out-dir <project>/02-records/raw --hit-counts <project>/01-search/hit_counts.tsv
 ```
 
-Leave out a source the locked file dropped (`--sources openalex,europepmc,pubmed`). `--max` (default 2000) caps records per source. Exit 1 means a source failed or hit `--max`: the notes column says `TRUNCATED` or the count is `[VERIFY]`. Raise `--max`, narrow the string with the user, or record why the file is partial. Do not report a truncated file as the full search. The script refuses to overwrite an existing file; a rerun on the same day needs a new folder or the old file moved.
+Omit any source dropped in the locked file (`--sources openalex,europepmc,pubmed`). `--max` (default 2000) caps records per source. Exit 1 means a source failed or hit `--max`: the notes column will show `TRUNCATED` or the count will be `[VERIFY]`. Raise `--max`, narrow the search string with the user, or record why the file is partial. Never report a truncated file as the full search. The script will not overwrite an existing file; to rerun on the same day, use a new folder or move the old file.
 
-Optional extras, only when the locked file includes them: Web of Science (Export RIS, `wos_YYYYMMDD.ris`), Scopus (RIS or CSV, `scopus_YYYYMMDD.ris`), Embase (RIS or CSV). The user exports these; put the files in the same folder. A user's own DOI list goes in `02-records/raw/manual_YYYYMMDD.csv` with a `doi,title,year` header and `--source manual`.
+Optional extras (only when included in the locked file): Web of Science (Export RIS, `wos_YYYYMMDD.ris`), Scopus (RIS or CSV, `scopus_YYYYMMDD.ris`), Embase (RIS or CSV). The user exports these files; place them in the same folder. A user's own DOI list goes in `02-records/raw/manual_YYYYMMDD.csv` with a `doi,title,year` header and `--source manual`.
 
-For each file, the record count should match its row in `hit_counts.tsv` (for API rows, the "retrieved N of T" note). If it does not, stop and find out why. Do not drop records to force a match.
+Each file's record count must match its row in `hit_counts.tsv` (for API rows, check the "retrieved N of T" note). If it does not match, stop and find out why. Do not drop records to force a match.
 
-3. Checkpoint `exports_complete`. When every file came from `api_search.py` with exit 0, the agent records it: `YYYY-MM-DD | search-export-and-dedup | exports_complete (api_search, all sources complete) | agent`. When there are manual exports, ask the user to confirm that folder is the full search, and append the line with `| human` only after they say yes.
+3. Checkpoint `exports_complete`. When all files come from `api_search.py` with exit 0, record: `YYYY-MM-DD | search-export-and-dedup | exports_complete (api_search, all sources complete) | agent`. When there are manual exports, ask the user to confirm that the folder contains the full search, and append the line with `| human` only after they confirm.
 4. Run dedup from the suite root (the directory that contains `skills/`):
 
 ```bash

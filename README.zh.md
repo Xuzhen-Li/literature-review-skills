@@ -24,8 +24,8 @@
 ## 功能
 
 - 18项技能，涵盖从项目建立到针对审稿意见逐条回复的全过程。`review-orchestrator` 会读取 `project.yaml` 并路由到下一个技能。
-- 不需要登录。agent 通过免费 API（OpenAlex、Europe PMC、PubMed、Semantic Scholar、arXiv，可选 Crossref）检索并自动下载开放获取 PDF，只把拿不到的必需文献列成一份排好序的简短清单（含 DOI 和理由）交给您。Web of Science、Scopus 和 Zotero 都是可选项。
-- 6个人工节点：主题、检索式、纳入标准、大纲、期刊和最终提交。用户通过节点，agent 会将其记录下来。 可选的 `institutional_access` 只在使用订阅数据库时需要。
+- 不需要登录。agent 通过免费 API（OpenAlex、Europe PMC、PubMed、Semantic Scholar、arXiv，可选 Crossref）检索并下载开放获取 PDF，最后只列出一份简短的必需文献清单（按重要程度排序，附有 DOI 和理由），请您帮忙获取这些它下载不到的全文。Web of Science、Scopus 和 Zotero 都是可选项。
+- 6个人工节点分别锁定主题、检索式、纳入标准、大纲、目标期刊和最终定稿。可选的第7个节点 `institutional_access` 只在使用订阅数据库时才需要。每个节点只需回复一句固定的确认话术，由 agent 记录在案。
 - 建立证据表。草稿中的句子会映射到证据 ID，否则保留 `[NEEDS SOURCE]` 标记。
 - 经过测试的去重器（依次检查 `DOI`、`PMID` 以及标准化的标题和年份），从 API 下载的 CSV 以及可选的 RIS、PubMed NBIB、CSV 导出文件中记录 PRISMA 识别数量统计。
 - 标识符验证器（`skills/search-export-and-dedup/scripts/verify_ids.py`）：通过 Crossref（DOI 注册机构）解析 `DOI`（通常以 10. 开头、用于命名论文的数字对象标识符），并通过 NCBI（美国国家生物技术信息中心）解析 `PMID`（PubMed 论文数字编号），将存疑项标记为 `[VERIFY]` 并输出至独立的 `identifier_check.csv`，且不会修改输入文件。
@@ -70,12 +70,12 @@ flowchart TD
 | # | 技能 | 用途 |
 |---|-------|---------|
 | 0 | `review-orchestrator` | 入口点。读取 `project.yaml` 和 `LOG.md`，报告当前阶段，路由到下一个技能，并强制执行人工节点拦截。 |
-| 1 | `review-project-setup` | 创建目录结构，向用户提问（主题、领域、综述类型、目标读者、时间表），并写入 `project.yaml`。 |
+| 1 | `review-project-setup` | 创建目录结构，向用户提问（主题、领域、综述类型、目标读者、时间表），并写入 `project.yaml`（含 `narrative_core_cap`）。不询问登录：默认使用免费 API 和开放获取下载。只有用户说明有图书馆账号时，才加入 Web of Science 或 Scopus。 |
 | 2 | `review-scoping-and-gaps` | 执行背景扫描，列出候选角度、知识空白说明、可行性统计，并推荐一个角度。人工节点：锁定主题。导出后可选的聚类步骤可能会要求重新开启该节点。 |
-| 3 | `search-strategy-builder` | 将 PICO、PEO 或 SPIDER 概念转化为同义词、MeSH 或 Emtree 词表及字段标签；生成 PubMed、Web of Science 和 Scopus 的检索式；测试运行数量统计；PRISMA-S 报告块。人工节点：锁定检索式。当命中数量极端时，可选用宽泛、适中和严格的检索式；锁定其中一个检索式。 |
-| 4 | `search-export-and-dedup` | 用免费 API（`api_search.py`）自动运行已锁定的检索式，每个来源保存一个 CSV；可选的订阅数据库导出由用户补充。随后合并去重，写入 PRISMA 识别数量统计。 |
+| 3 | `search-strategy-builder` | 将 PICO、PEO 或 SPIDER 概念转化为同义词、MeSH 词表及字段标签；为免费 API（OpenAlex、Europe PMC、PubMed、Semantic Scholar、arXiv）生成检索式，仅在启用时加入 Web of Science 或 Scopus；由 agent 自己运行并记录命中数；PRISMA-S 报告块。人工节点：锁定检索式。当命中数量极端时，可选用宽泛、适中和严格的检索式；锁定其中一个检索式。 |
+| 4 | `search-export-and-dedup` | 用免费 API（`api_search.py`）运行已锁定的检索式，每个来源保存一个 CSV。用户可自行补充订阅数据库的导出文件。随后合并去重，写入 PRISMA 文献识别数量。 |
 | 5 | `literature-screening` | 执行纳入和排除标准，进行标题/摘要和全文筛选并附带原因，可选 Cohen's kappa，以及提供 PRISMA 2020 流程数据。叙述性综述则保留用户确认的核心文献，并将其余文献记录为未阅读。 |
-| 6 | `zotero-library-sync` | 自动下载合法的开放获取 PDF（`find_oa_pdfs.py`），对拿不到的文献分级，只把必需文献整理成排好序的 `please_fetch.md` 交给用户。阅读不等上传。Zotero 导入和分类为可选项。不使用影子图书馆。仅在用户要求后才进行可选的笔记导出。 |
+| 6 | `zotero-library-sync` | 下载合法的开放获取 PDF（`find_oa_pdfs.py`），对未拿到全文的文献分级，只把必需读全文的文献整理成排好序的 `please_fetch.md` 清单交给用户。阅读进度不等待文件上传。Zotero 导入和分类为可选项。不使用影子图书馆。仅在用户提出要求后才导出笔记。 |
 | 7 | `paper-deep-reading` | 撰写单篇文献笔记和证据表行数据。仅使用附带页码的简短原文引用。 |
 | 8 | `exemplar-review-analysis` | 阅读 3-5 篇用户可以打开的近期综述并撰写样式简报。锁定期刊后，根据锁定期刊的综述更新该简报。 |
 | 9 | `review-outline-builder` | 创建主题大纲，包含各节论点、证据 ID、计划图表和字数预算，包括局限性和下一步研究问题。系统性综述还会获得注册提醒和偏倚工具检查清单。人工节点：锁定大纲。 |

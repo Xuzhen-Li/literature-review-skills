@@ -82,3 +82,10 @@ def test_main_writes_md(tmp_path):
 
 def test_nothing_to_fetch_message():
     assert "Nothing to fetch" in pf.render_md([], 0)
+
+
+def test_intro_count_is_substituted():
+    fetch, _, _, _ = pf.build(STATUS, NEED, None, 15)
+    md = pf.render_md(fetch, 0)
+    assert f"I could not get these {len(fetch)} papers" in md
+    assert "{len" not in md and "{" not in md.split("\n")[2]

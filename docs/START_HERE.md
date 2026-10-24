@@ -5,7 +5,7 @@ You do not need to start from step 1. You can jump in with a draft or a folder o
 | What you have | Start with | Skip | Say this |
 | --- | --- | --- | --- |
 | Only a topic, no papers | `review-project-setup` | nothing | `start a new review on <topic>` |
-| You want Web of Science or Scopus too (optional) | `review-project-setup`, then say you have a library login | nothing | `start a new review on <topic>; I can also search Web of Science` |
+| You also want Web of Science or Scopus (optional) | `review-project-setup`, then say you have a library login | nothing | `start a new review on <topic>; I can also search Web of Science` |
 | A set of papers already (Zotero collection, EndNote/Mendeley library, PDF folder, or a DOI list) | `review-project-setup`, then `search-export-and-dedup`: export the collection as RIS (Zotero: right-click collection > Export Collection > RIS); for a PDF folder, drag the PDFs into Zotero (it reads their metadata) and export RIS; for a DOI list, write a CSV with a `doi,title,year` header. Pass the `.ris` or `.csv` with `--source manual` (dedup.py reads only `.ris`, `.nbib`, `.txt` PubMed, and `.csv`) | database searching (record in the methods that the set is user-supplied) | `I already have my papers in <path>; set up a review from them` |
 | A draft (any state, .md or .docx) | `review-writing` | the whole pipeline; no `project.yaml` needed | `rewrite my review <path>; fix the logic` |
 | A near-final manuscript | `journal-selection`, then `manuscript-polishing`, then `submission-package` | search, screening, drafting | `pick a journal for <path>` / `polish <path> for <journal>` |
@@ -14,17 +14,17 @@ You do not need to start from step 1. You can jump in with a draft or a folder o
 
 ## How papers are found and downloaded
 
-You do not need a university login, a paid database, or Zotero. By default the agent does the searching and downloading itself:
+You do not need a university login, a paid database, or Zotero. By default, the agent searches and downloads papers itself:
 
-1. Search: the agent runs the locked search through free APIs (OpenAlex, Europe PMC, PubMed, Semantic Scholar, arXiv; Crossref on request) and writes the hit counts itself:
+1. Search: the agent runs the locked search through free APIs (OpenAlex, Europe PMC, PubMed, Semantic Scholar, arXiv; Crossref on request) and records the hit counts:
    `python3 skills/search-export-and-dedup/scripts/api_search.py --query '<string>' --out-dir <project>/02-records/raw --hit-counts <project>/01-search/hit_counts.tsv`
 2. Merge and remove duplicates:
    `python3 skills/search-export-and-dedup/scripts/dedup.py --input <project>/02-records/raw/openalex_<date>.csv --source openalex ... --out-dir <project>/02-records`
 3. Download legal open-access PDFs for the included papers (OpenAlex, Unpaywall when `LRS_CONTACT_EMAIL` is set, Europe PMC, Semantic Scholar, arXiv):
    `python3 skills/zotero-library-sync/scripts/find_oa_pdfs.py <project>/03-screening/included.tsv -o <project>/04-library/oa_check.csv --download <project>/04-library/pdfs`
-4. The agent marks which missing papers are essential in `04-library/fulltext_need.tsv` and runs `please_fetch.py`. You get `04-library/please_fetch.md`: a short ranked list, each with its DOI, why it matters, and the file name to save it under in `04-library/uploads/`. Get what you can through your library, interlibrary loan, or the author. The review does not wait; anything you skip is cited from its abstract and listed as a limitation. Shadow libraries are never used.
+4. The agent marks which missing papers are essential in `04-library/fulltext_need.tsv` and runs `please_fetch.py`. You get `04-library/please_fetch.md`, a short ranked list showing each paper's DOI, why it matters, and the file name to save it under in `04-library/uploads/`. Get what you can through your library, interlibrary loan, or the author. The review does not wait. Any paper you skip is cited from its abstract and noted as a limitation. Shadow libraries are never used.
 
-Optional extras: Web of Science, Scopus, or Embase (set `use_subscription_databases: true` and give the `institutional_access` sentence), and Zotero collections (`use_zotero: true`). Nothing in steps 1 to 4 needs them.
+Optional extras: Web of Science, Scopus, or Embase (set `use_subscription_databases: true` and reply with the `institutional_access` sentence), and Zotero collections (`use_zotero: true`). Steps 1 to 4 do not need them.
 
 ## Who does what (one job per skill)
 

@@ -16,7 +16,7 @@ description: >
 
 On first use in a project, say this verbatim:
 
-I am the search strategy builder. I write search strings for free databases, run them myself to get the hit counts, and I never invent a count. You do not need a database login.
+I am the search strategy builder. I write search strings for free databases, run them myself to get the hit counts, and never make up a number. You do not need a database login.
 
 ## When to use
 
@@ -38,10 +38,10 @@ If the topic is not locked, stop and return to `review-scoping-and-gaps`.
 1. Copy the locked question into `01-search/search_strings.md`. List one row per concept from the scope framework: concept, free-text synonyms, MeSH (PubMed), Emtree (only if Embase will be searched). A synonym you did not check against a record or a thesaurus is marked `candidate`.
 2. Look up MeSH in the browser above. Record the descriptor, whether it is exploded (`[mh]`) or not (`[mh:noexp]`), and the entry terms you actually saw. If you did not open the page, write `MeSH: not looked up`. Do not invent a descriptor.
 3. Emtree is for Embase, not for Scopus. If the user is not searching Embase, write `Emtree: not used`. If they are, use the syntax for the platform they named (Embase.com `'term'/exp` or Ovid `exp term/`) from `references/database_syntax.md`, and label the platform.
-4. Write one fenced block per database under its own heading. The default set is free and needs no login: `## OpenAlex`, `## Europe PMC`, `## PubMed`, `## Semantic Scholar`, and `## arXiv` when the field posts preprints there. Syntax for each is in `references/database_syntax.md`. Drop a default source only with a written reason (PRISMA-S item 1). Add `## Web of Science` or `## Scopus` only when `use_subscription_databases` is `true`. Mark the string that will be run with `- Locked: yes`.
+4. Write one fenced block per database under its own heading. The default set is free and needs no login: `## OpenAlex`, `## Europe PMC`, `## PubMed`, `## Semantic Scholar`, and `## arXiv` (when the field posts preprints there). See `references/database_syntax.md` for each database's syntax. Drop a default source only with a written reason (PRISMA-S item 1). Add `## Web of Science` or `## Scopus` only when `use_subscription_databases` is `true`. Mark each string to be run with `- Locked: yes`.
 5. Tag terms. Untagged PubMed terms are subject to automatic term mapping; the saved string must be the one PubMed ran. The API runs the string exactly as written. If you also open it on the PubMed website, copy the Advanced search History line (https://pubmed.ncbi.nlm.nih.gov/advanced/) into the file when it differs.
 6. Put limits in a separate sentence under each block: date, language, publication type, human/animal. Cochrane Handbook chapter 4 (https://training.cochrane.org/handbook) treats limits as something to justify. Default is no language limit. A date limit needs a reason in the file (for example the question starts at a named event). Species hedges such as `animals[mh] NOT humans[mh]` are only for questions that need them. Do not paste that hedge into a plant or methods review.
-7. Get the counts yourself. Run each locked free-API string with `--count-only` and `--hit-counts`; one row per source is appended to `01-search/hit_counts.tsv` (header `database,interface,date,count,notes`):
+7. Get the hit counts yourself. Run each locked free-API string with `--count-only` and `--hit-counts`. This appends one row per source to `01-search/hit_counts.tsv` (header `database,interface,date,count,notes`):
 
 ```bash
 python3 <suite>/skills/search-export-and-dedup/scripts/api_search.py --count-only \
@@ -50,7 +50,7 @@ python3 <suite>/skills/search-export-and-dedup/scripts/api_search.py --count-onl
   --hit-counts <project>/01-search/hit_counts.tsv
 ```
 
-A source that errors is written as `[VERIFY]`; run it again later or drop it with a reason. For an optional subscription database, the user runs the string and pastes the interface edition, date, and count. A count you did not receive is `[VERIFY]` in both files.
+If a source returns an error, it is recorded as `[VERIFY]`; rerun it later or drop the source with a reason. For optional subscription databases, the user runs the string and pastes the interface edition, date, and count. Any count you have not received must stay `[VERIFY]` in both files.
 8. If a count is below 20 or above 5000, or the user says it is too large or too small to screen, offer a wide string, a middle string, and a tight string as in `references/string_breadths.md`. Those two bounds are suite defaults, not a database rule. The user still locks exactly one. If they decline the extra strings, keep the single locked string and add `- Breadth declined:` plus their reason. Do not invent a hit count for a string that was not run. Then run:
 
 ```

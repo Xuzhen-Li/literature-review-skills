@@ -35,7 +35,7 @@ The required gates are `topic_lock`, `search_lock`, `inclusion_lock`, `outline_l
 | `journal_lock` | `I confirm the journal lock` |
 | `final_submit` | `I confirm the package is ready for me to submit` |
 
-`download_access` defaults to `open_access` with no sentence at all: the agent searches the free APIs (OpenAlex, Europe PMC, PubMed, Semantic Scholar, arXiv, optionally Crossref), downloads open-access PDFs, and asks the user only for the ranked please-fetch list of essential papers it could not get. The first sentence sets `download_access: institutional` and allows subscription databases. The second sets `download_access: unavailable`. The third keeps `open_access`. Each sets `gates.institutional_access` to `true`.
+`download_access` defaults to `open_access` without needing any confirmation sentence: the agent searches the free APIs (OpenAlex, Europe PMC, PubMed, Semantic Scholar, arXiv, and optionally Crossref), downloads open-access PDFs, and asks the user only for the ranked please-fetch list of essential papers it could not get. The first sentence sets `download_access: institutional` and enables subscription databases. The second sets `download_access: unavailable`. The third keeps `open_access`. Any of the three sets `gates.institutional_access` to `true`.
 
 Installed skill folders do not include this file. Each owning skill repeats its own pass condition.
 
@@ -47,7 +47,7 @@ Installed skill folders do not include this file. Each owning skill repeats its 
 - On the login sentence: set `gates.institutional_access` to `true` and `download_access` to `institutional`.
 - On the no-permission sentence: set `gates.institutional_access` to `true` and `download_access` to `unavailable`.
 - On the open-access sentence: set `gates.institutional_access` to `true` and keep `download_access: open_access`.
-- Blocks: nothing. Without it the project stays on the free, open-access default. Subscription strings and publisher-login downloads need it.
+- Blocks: nothing. Without this gate, the project stays on the free, open-access default. It is only needed for subscription search strings and publisher-login downloads.
 
 ## topic_lock
 

@@ -115,10 +115,10 @@ def render_md(fetch: list[dict], n_missing_abstract: int) -> str:
         return ("# Please fetch\n\nNothing to fetch. Every paper the review needs in full text was "
                 "downloaded from an open-access source.\n")
     lines = ["# Please fetch", "",
-             f"I could not get these {len(fetch)} papers from any free source, and the review needs the full text "
-             "of each. Most important first. Download each PDF through your library, interlibrary loan, or by "
-             "asking the author, and save it under the name shown. Skip any you cannot get; I will use the "
-             "abstract and say so in the limitations.", ""]
+             f"I could not get these {len(fetch)} papers from any free source, and the review needs their "
+             "full text. They are listed from most to least important. Please download what you can through "
+             "your library, interlibrary loan, or from the authors, and save each PDF under the file name "
+             "shown. Skip any you cannot get; I will rely on the abstract and note this in the limitations.", ""]
     for r in fetch:
         lines.append(f"{r['priority']}. https://doi.org/{r['doi']}" if r["doi"] else f"{r['priority']}. (no DOI)")
         if r["title"]:

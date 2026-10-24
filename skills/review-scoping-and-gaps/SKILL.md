@@ -36,14 +36,14 @@ If `review_type` is empty, return to `review-project-setup`.
 1. Read the working topic. Write the question in the framework that matches `review_type` (table in `references/question_frameworks.md`). Leave a cell as `[VERIFY]` rather than inventing a population or outcome the user did not name.
 2. Propose three angles. Each angle gets: a one-sentence question, what it includes, what it excludes, and why a reader in `audience` would care. At least one angle must be narrower than the working title. Do not propose an angle that would require data the user has already said they lack.
 3. For each angle, write a gap statement in this shape: "Reviews to date cover X; they do not answer Y; this angle would answer Y by Z." If you cannot name X from a paper you opened in this session, write `X: [VERIFY]` and list the search you want the user to run. Do not cite a review you did not open.
-4. Feasibility is a count from a database, not an estimate. For each angle build one short PubMed query using `[tiab]` and, when you looked up a term at https://www.ncbi.nlm.nih.gov/mesh/, one `[mh]` term, plus the same idea as plain words for OpenAlex. Run it yourself:
+4. Feasibility is an actual database count, not an estimate. For each angle, build a short PubMed query using `[tiab]` and (if you looked up a term at https://www.ncbi.nlm.nih.gov/mesh/) one `[mh]` term, plus the same query in plain words for OpenAlex. Run the counts yourself:
 
 ```bash
 python3 <suite>/skills/search-export-and-dedup/scripts/api_search.py --count-only \
   --sources pubmed,openalex --pubmed-query '<PubMed query>' --openalex-query '<OpenAlex query>'
 ```
 
-Write each printed total with today's date and the source name. If a source fails, try once more, then give the user `https://pubmed.ncbi.nlm.nih.gov/?term=<url-encoded query>` and ask them to paste the count and date. Until a count exists from either route, the cell is `[VERIFY]`. Never write a number you did not see in the script output, a page opened this session, or the user's paste.
+Record each printed total with today's date and the source name. If a source fails, retry once. If it fails again, give the user `https://pubmed.ncbi.nlm.nih.gov/?term=<url-encoded query>` and ask them to paste the count and date. Until you have a count from either route, mark the cell as `[VERIFY]`. Never write a number that did not come from the script output, a page opened in this session, or the user's message.
 
 5. Recommend one angle in a short paragraph: fit to review type, a non-`[VERIFY]` count if one exists, and the narrowest question that still has enough records to discuss. If every count is `[VERIFY]`, recommend an angle but say the recommendation is provisional.
 6. Write `00-scope/scope_report.md` with these headings: `Review type`, `Framework`, `Angle A`, `Angle B`, `Angle C`, `Feasibility`, `Recommendation`, `Out of scope`, `Gate`.

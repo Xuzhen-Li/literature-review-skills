@@ -1,9 +1,9 @@
 ---
 name: zotero-library-sync
 description: >
-  Gets the full text of the included papers itself: finds and downloads
+  Gets full texts for included papers itself: finds and downloads
   legal open-access PDFs (OpenAlex, Unpaywall, Europe PMC, Semantic
-  Scholar, arXiv), records each route in pdf_status.csv, and hands the
+  Scholar, arXiv), records each route in pdf_status.csv, and gives the
   user only a short ranked please-fetch list of essential papers it could
   not get. Zotero import and collections are optional. Trigger on "find
   the PDFs", "full text", "download the papers", "please fetch", "add to
@@ -18,7 +18,7 @@ description: >
 
 On first use in a project, say this verbatim:
 
-I am Zotero library sync. I download the open-access full texts myself. You only get a short list of the essential papers I could not get, each with its DOI and why it matters. Zotero is optional.
+I am Zotero library sync. I download open-access full texts myself. You only get a short list of the essential papers I could not get, with each DOI and why it matters. Zotero is optional.
 
 ## When to use
 
@@ -52,10 +52,10 @@ record_id,citation_key,doi,pmid,title,oa_status,pdf_url,retrieval_route,pdf_stat
 
 Copy `oa_status`, `pdf_url`, and `local_path` from `oa_check.csv`. A saved file is `pdf_status` `user_has_pdf` with `retrieval_route` `unpaywall` or `repository` (`repository` covers Europe PMC, Semantic Scholar, and arXiv; name the source in `notes`). A row with no saved file is `no_legal_copy_found` with route `none`. When `download_access` is `institutional`, you may first try `https://doi.org/<doi>` in the logged-in browser (route `publisher`); the user types any password, captcha, or second factor, never you. `retrieval_route` is `zotero`, `unpaywall`, `publisher`, `repository`, `ill`, `user_upload`, or `none`. `pdf_status` is `available`, `requested_ill`, `no_legal_copy_found`, `user_has_pdf`, `awaiting_user_upload`, or `user_uploaded`. `checked_on` is today's date. If there is no DOI, set `oa_status` to `not_checked` and `notes` to `no DOI`; do not invent a DOI. Crossref is for filling a blank title or year on a known DOI (`https://api.crossref.org/works/<doi>`), not for guessing one.
 3. Triage every included paper that has no PDF. Write `04-library/fulltext_need.tsv` with the header `record_id,doi,need,why,rank`:
-   - `essential`: the review cannot be written honestly from the abstract. For example it is a core study whose methods, effect sizes, or figures you must read, the only source for a claim in the locked scope, or a key paper that defines the field. `why` is one sentence the user can read, and `rank` is 1 for the most important.
-   - `useful`: the full text would help, but the abstract carries the point.
-   - `abstract_ok`: the abstract is enough for how the review uses it.
-   Keep `essential` short. Rank by how much of the review rests on the paper. Do not mark a paper essential just because it is closed.
+   - `essential`: the review cannot be written honestly from the abstract alone. For example, it is a core study whose methods, effect sizes, or figures you must read, the only source for a claim in the locked scope, or a key paper that defines the field. `why` is one clear sentence for the user, and `rank` starts at 1 for the most important paper.
+   - `useful`: the full text would help, but the abstract is enough to make the point.
+   - `abstract_ok`: the abstract is enough for how the review uses this paper.
+   Keep the `essential` list short. Rank papers by how much the review depends on them. Do not mark a paper `essential` just because it is closed access.
 4. Build the please-fetch list:
 
 ```bash
@@ -66,8 +66,8 @@ python3 <suite>/skills/zotero-library-sync/scripts/please_fetch.py \
   --out-dir <project>/04-library
 ```
 
-It lists only papers that are `essential`, still have no PDF, and are not yet in `uploads/`, ranked, at most `--max` (default 15). Every other missing paper goes to `abstract_only.tsv`. Exit 2 means a missing paper has no triage row, or a triage row is malformed; fix `fulltext_need.tsv` and run it again. If it says essential papers spilled over `--max`, tighten the ranking instead of raising the cap.
-5. Show the user `04-library/please_fetch.md` as it is: the numbered DOIs, why each matters, and the `04-library/uploads/<record_id>.pdf` name to save under. That is the only thing you ask them to fetch. If the list is empty, say so and carry on. Do not wait for the uploads: reading goes on, and a paper that never arrives is cited from its abstract only.
+This lists only `essential` papers that still have no PDF and are not yet in `uploads/`, ranked, up to `--max` (default 15). All other missing papers go to `abstract_only.tsv`. Exit 2 means a missing paper has no triage row, or a triage row is malformed; fix `fulltext_need.tsv` and run the script again. If essential papers exceed `--max`, tighten your ranking instead of raising the cap.
+5. Show the user `04-library/please_fetch.md` as is: the numbered DOIs, why each paper matters, and the file name `04-library/uploads/<record_id>.pdf` to save it under. Do not ask them to fetch anything else. If the list is empty, say so and move on. Do not wait for uploads: continue reading, and cite any paper that never arrives from its abstract only.
 6. When the user says they saved files, record them:
 
 ```bash
